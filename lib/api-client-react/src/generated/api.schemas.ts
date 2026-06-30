@@ -99,6 +99,7 @@ export interface DocumentDetail {
   title: string;
   status: DocumentDetailStatus;
   content: string;
+  htmlContent?: string;
   /** @nullable */
   filePath?: string | null;
   redactions: Redaction[];

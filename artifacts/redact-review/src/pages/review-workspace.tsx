@@ -488,7 +488,87 @@ export default function ReviewWorkspace() {
                 )}
 
                 {/* Document Content */}
-                <div className="font-serif text-[17px] leading-[1.9] text-[#1F1F1F]/90 whitespace-pre-wrap">
+                {document.htmlContent && docViewMode !== "export" ? (
+                  // ── Rich HTML viewer (preserves original document formatting) ──
+                  <div
+                    className="doc-html-viewer font-serif text-[16px] leading-[1.8] text-[#1F1F1F]/90"
+                    style={{
+                      fontFamily: "'Georgia', serif",
+                    }}
+                    dangerouslySetInnerHTML={{
+                      __html: (() => {
+                        let html = document.htmlContent!;
+
+                        // Inject PII highlight spans by replacing matching text in the HTML.
+                        // Sort by longest text first to avoid nested/partial replacements.
+                        const sorted = [...redactions].sort((a, b) => b.text.length - a.text.length);
+
+                        for (const r of sorted) {
+                          if (!r.text || r.text.length < 2) continue;
+                          const escapedText = r.text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+                          const isConfirmed = r.status === "confirmed" || r.status === "user_added";
+                          const consensus = parseConsensus(r.note);
+                          const isSecond = isSecondOpinion(consensus);
+                          const sev = getSeverity(r.category);
+
+                          let style = "";
+                          let extra = "";
+                          if (docViewMode === "reviewed" && isConfirmed) {
+                            style = "background:#000;color:transparent;border-radius:3px;padding:0 2px;";
+                          } else if (docViewMode === "original") {
+                            if (r.status === "rejected") {
+                              style = "opacity:0.5;";
+                            } else if (isSecond && r.status === "pending") {
+                              style = "background:#fed7aa;border-bottom:2px solid #f97316;color:#7c2d12;padding:0 2px;border-radius:2px;cursor:pointer;";
+                            } else if (sev === "critical") {
+                              style = "background:#fee2e2;border-bottom:2px solid #dc2626;color:#7f1d1d;padding:0 2px;border-radius:2px;cursor:pointer;";
+                            } else if (sev === "high") {
+                              style = "background:#fff7ed;border-bottom:2px solid #fb923c;color:#7c2d12;padding:0 2px;border-radius:2px;cursor:pointer;";
+                            } else {
+                              style = "background:#fef3c7;border-bottom:2px solid #f59e0b;color:#78350f;padding:0 2px;border-radius:2px;cursor:pointer;";
+                            }
+                            if (r.status === "user_added") {
+                              style = "background:#e0e7ff;border-bottom:2px solid #6366f1;color:#312e81;padding:0 2px;border-radius:2px;cursor:pointer;";
+                            }
+                            if (isConfirmed) style += "text-decoration:line-through;opacity:0.7;";
+                            if (selectedId === r.id) style += "outline:2px solid #6B1E2B;outline-offset:1px;";
+                            if (r.status === "confirmed") extra = `<sup style="font-size:8px;background:#4C7A53;color:#fff;border-radius:2px;padding:0 3px;margin-left:2px;">R</sup>`;
+                            if (r.status === "rejected") extra = `<sup style="font-size:8px;background:#6b7280;color:#fff;border-radius:2px;padding:0 3px;margin-left:2px;">I</sup>`;
+                            if (r.status === "user_added") extra = `<sup style="font-size:8px;background:#6B1E2B;color:#fff;border-radius:2px;padding:0 3px;margin-left:2px;">R</sup>`;
+                          }
+
+                          // Only replace first occurrence per redaction (text may appear many times but offsets are specific)
+                          html = html.replace(
+                            new RegExp(`(?![^<]*>)(${escapedText})`, "m"),
+                            `<mark id="doc-redaction-${r.id}" data-rid="${r.id}" style="${style}background-color:unset;">${"$1"}${extra}</mark>`
+                          );
+                        }
+
+                        // Apply styles for HTML elements from mammoth
+                        return `<style>
+                          .doc-html-viewer p { margin-bottom: 0.75em; }
+                          .doc-html-viewer h1, .doc-html-viewer h2, .doc-html-viewer h3 { font-weight: bold; margin: 1.2em 0 0.4em; }
+                          .doc-html-viewer h1 { font-size: 1.4em; }
+                          .doc-html-viewer h2 { font-size: 1.2em; }
+                          .doc-html-viewer strong, .doc-html-viewer b { font-weight: 700; }
+                          .doc-html-viewer em, .doc-html-viewer i { font-style: italic; }
+                          .doc-html-viewer table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+                          .doc-html-viewer td, .doc-html-viewer th { border: 1px solid #E8DED1; padding: 6px 10px; }
+                          .doc-html-viewer ul, .doc-html-viewer ol { padding-left: 1.5em; margin: 0.5em 0; }
+                          .doc-html-viewer li { margin-bottom: 0.25em; }
+                          .doc-html-viewer mark { background: unset; }
+                        </style>${html}`;
+                      })()
+                    }}
+                    onClick={(e) => {
+                      const target = (e.target as HTMLElement).closest("mark[data-rid]");
+                      if (target) setSelectedId((target as HTMLElement).dataset.rid!);
+                    }}
+                  />
+                ) : (
+                  // ── Plain text viewer (fallback for txt/plain docs) ──
+                  <div className="font-serif text-[17px] leading-[1.9] text-[#1F1F1F]/90 whitespace-pre-wrap">
                   {chunks.map(chunk => {
                     if (chunk.isNormal) return <span key={chunk.id}>{chunk.text}</span>;
 
@@ -580,6 +660,8 @@ export default function ReviewWorkspace() {
 
                     return null;
                   })}
+                  </div>
+                )}
 
                   {docViewMode === "export" && (
                     <div className="mt-12 p-8 bg-[#FFFDF9] rounded-2xl border border-[#E8DED1] shadow-sm flex flex-col items-center justify-center text-center">
@@ -600,7 +682,6 @@ export default function ReviewWorkspace() {
                        </Button>
                     </div>
                   )}
-                </div>
               </>
             )}
           </div>

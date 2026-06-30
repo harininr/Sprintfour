@@ -68,6 +68,7 @@ export const GetDocumentResponse = zod.object({
   "title": zod.string(),
   "status": zod.enum(['pending', 'in_review', 'completed']),
   "content": zod.string(),
+  "htmlContent": zod.string().optional(),
   "filePath": zod.string().nullish(),
   "redactions": zod.array(zod.object({
   "id": zod.string(),

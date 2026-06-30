@@ -27,6 +27,41 @@ const upload = multer({
   },
 });
 
+/**
+ * Minimal HTML sanitizer — keeps safe formatting tags only.
+ * Strips scripts/style/event handlers but preserves document structure.
+ */
+function sanitizeHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/\s+on\w+="[^"]*"/gi, "")
+    .replace(/\s+on\w+='[^']*'/gi, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, "\u00a0");
+}
+
+/**
+ * Extract plain text from HTML for the AI redaction engines.
+ * Preserves newline boundaries so text offsets remain stable.
+ */
+function htmlToPlainText(html: string): string {
+  return html
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/h[1-6]>/gi, "\n\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<\/tr>/gi, "\n")
+    .replace(/<\/td>/gi, "  ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 router.post(
   "/documents/upload",
   upload.single("file"),
@@ -38,62 +73,46 @@ router.post(
 
     const { originalname, buffer, mimetype } = req.file;
     const ext = path.extname(originalname).toLowerCase();
-    let extractedText = "";
+
+    let htmlContent = "";
+    let contentType: "html" | "text" = "text";
 
     try {
       if (
         ext === ".docx" ||
-        mimetype ===
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        ext === ".doc" ||
+        mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        mimetype === "application/msword"
       ) {
-        const mammoth = await import("mammoth");
-        // Use convertToHtml to preserve table cell alignments (tabs) and paragraph breaks
-        const result = await mammoth.convertToHtml({ buffer });
-        extractedText = result.value
-          .replace(/<\/p>\s*<\/td>/gi, '</td>') // strip </p> inside table cells
-          .replace(/<\/td>\s*<td[^>]*>/gi, '      ') // 6 spaces between cells
-          .replace(/<\/p>/gi, '\n\n')
-          .replace(/<\/tr>/gi, '\n')
-          .replace(/<br\s*\/?>/gi, '\n')
-          .replace(/<[^>]+>/g, '') // strip remaining tags
-          .replace(/&nbsp;/g, ' ')
-          .replace(/&lt;/g, '<')
-          .replace(/&gt;/g, '>')
-          .replace(/&amp;/g, '&');
-      } else if (ext === ".doc" || mimetype === "application/msword") {
         try {
           const mammoth = await import("mammoth");
           const result = await mammoth.convertToHtml({ buffer });
-          extractedText = result.value
-            .replace(/<\/p>\s*<\/td>/gi, '</td>')
-            .replace(/<\/td>\s*<td[^>]*>/gi, '      ')
-            .replace(/<\/p>/gi, '\n\n')
-            .replace(/<\/tr>/gi, '\n')
-            .replace(/<br\s*\/?>/gi, '\n')
-            .replace(/<[^>]+>/g, '')
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&amp;/g, '&');
+          htmlContent = sanitizeHtml(result.value);
+          contentType = "html";
         } catch {
-          extractedText = buffer.toString("utf-8");
+          htmlContent = buffer.toString("utf-8");
+          contentType = "text";
         }
       } else {
-        // Plain text / markdown
-        extractedText = buffer.toString("utf-8");
+        // Plain text / markdown — render as-is
+        htmlContent = buffer.toString("utf-8").replace(/\0/g, "").replace(/\r\n/g, "\n").trim();
+        contentType = "text";
       }
 
-      // Strip null bytes and normalise whitespace
-      extractedText = extractedText
-        .replace(/\0/g, "")
-        .replace(/\r\n/g, "\n")
-        .trim();
+      // 'content' = plain text for AI engines (offset-stable)
+      // 'htmlContent' = rich HTML for the document viewer
+      const plainText = contentType === "html" ? htmlToPlainText(htmlContent) : htmlContent;
 
       const title =
         (req.body?.title as string | undefined)?.trim() ||
-        originalname.replace(/\.[^.]+$/, ""); // filename without extension
+        originalname.replace(/\.[^.]+$/, "");
 
-      res.json({ title, content: extractedText });
+      res.json({
+        title,
+        content: plainText,
+        htmlContent,
+        contentType,
+      });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       res.status(422).json({ error: `Failed to extract text: ${message}` });

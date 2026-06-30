@@ -67,44 +67,110 @@ router.get("/documents", async (req, res): Promise<void> => {
   res.json(ListDocumentsResponse.parse(result));
 });
 
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+/** Sanitise mammoth HTML output: keep safe structural tags, strip scripts/handlers */
+function sanitiseHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/\s+on\w+="[^"]*"/gi, "")
+    .replace(/\s+on\w+='[^']*'/gi, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, "\u00a0");
+}
+
+/** Extract plain text from HTML preserving line breaks for stable AI offsets */
+function htmlToPlain(html: string): string {
+  return html
+    .replace(/<\/p>/gi, "\n\n")
+    .replace(/<\/h[1-6]>/gi, "\n\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/li>/gi, "\n")
+    .replace(/<\/tr>/gi, "\n")
+    .replace(/<\/td>/gi, "  ")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\u00a0/g, " ")
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
+ * Encode content for DB storage.
+ * For HTML docs we store {"v":1,"plain":"...","html":"..."} so we can restore
+ * both the plain text (for AI offset matching) and the rich HTML (for display)
+ * without any schema changes.
+ */
+function encodeContent(plain: string, html: string | null): string {
+  if (!html) return plain;
+  return JSON.stringify({ v: 1, plain, html });
+}
+
+/** Decode DB content — returns { plain, html } */
+export function decodeContent(raw: string): { plain: string; html: string | null } {
+  if (raw.startsWith('{"v":1,')) {
+    try {
+      const parsed = JSON.parse(raw);
+      return { plain: parsed.plain ?? raw, html: parsed.html ?? null };
+    } catch { /* fall through */ }
+  }
+  return { plain: raw, html: null };
+}
+
+// ─── POST /documents ────────────────────────────────────────────────────────
+
 router.post("/documents", upload.single("file"), async (req, res): Promise<void> => {
   try {
     let title = "";
-    let content = "";
+    let plainText = "";
+    let htmlContent: string | null = null;
     let fileObj: any = null;
 
     if (req.file) {
-      // It's a file upload
       const file = req.file;
       title = file.originalname;
       const dataBuffer = fs.readFileSync(file.path);
-      
       const ext = path.extname(title).toLowerCase();
       console.log("Upload ext:", ext, "mimetype:", file.mimetype);
-      if (ext === ".docx" || file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+
+      if (
+        ext === ".docx" || ext === ".doc" ||
+        file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        file.mimetype === "application/msword"
+      ) {
         const mammoth = await import("mammoth");
-        const result = await mammoth.extractRawText({ buffer: dataBuffer });
-        content = result.value;
-      } else {
+        // Preserve rich HTML for viewer
+        const htmlResult = await mammoth.convertToHtml({ buffer: dataBuffer });
+        htmlContent = sanitiseHtml(htmlResult.value);
+        // Derive plain text for AI offset tracking
+        plainText = htmlToPlain(htmlContent);
+      } else if (ext === ".pdf") {
         const pdfData = await pdfParse(dataBuffer);
-        content = pdfData.text;
+        plainText = pdfData.text;
+      } else {
+        plainText = dataBuffer.toString("utf-8").replace(/\0/g, "").replace(/\r\n/g, "\n").trim();
       }
-      
       fileObj = file;
+
     } else if (req.body.title && req.body.content) {
-      // It's a JSON upload
       title = req.body.title;
-      content = req.body.content;
+      plainText = req.body.content;
     } else {
       res.status(400).json({ error: "Missing file or title/content in request" });
       return;
     }
 
+    // Store both plain text + HTML in a single column (no schema change needed)
+    const storedContent = encodeContent(plainText, htmlContent);
+
     const { data: doc, error: insertError } = await supabase
       .from("documents")
       .insert({
         title,
-        content,
+        content: storedContent,
         file_path: fileObj ? fileObj.path : null,
       })
       .select("*")
@@ -115,8 +181,8 @@ router.post("/documents", upload.single("file"), async (req, res): Promise<void>
       return;
     }
 
-    // Trigger background AI consensus detection
-    runConsensusDetection(doc.id, content).catch((err) => {
+    // AI engines work on plain text for accurate offset matching
+    runConsensusDetection(doc.id, plainText).catch((err) => {
       console.error("Background consensus detection failed:", err);
     });
 
@@ -185,11 +251,15 @@ router.get("/documents/:id", async (req, res): Promise<void> => {
     .eq("document_id", doc.id)
     .order("start_offset", { ascending: true });
 
+  // Decode content — split plain text and HTML
+  const decoded = decodeContent(doc.content ?? "");
+
   const result = GetDocumentResponse.parse({
     id: doc.id,
     title: doc.title,
     status: doc.status,
-    content: doc.content,
+    content: decoded.plain,
+    htmlContent: decoded.html ?? undefined,
     filePath: doc.file_path,
     createdAt: doc.created_at,
     updatedAt: doc.updated_at ?? null,
