@@ -172,7 +172,16 @@ export default function ReviewWorkspace() {
   const handleConfirmedComplete = () => {
     completeMutation.mutate(
       { id },
-      { onSuccess: () => { setCompleteModalOpen(false); setLocation(`/review/${id}/complete`); } }
+      { 
+        onSuccess: () => { 
+          setCompleteModalOpen(false); 
+          setLocation(`/review/${id}/complete`); 
+        },
+        onError: (err) => {
+          toast.error("Failed to complete review: " + err.message);
+          console.error(err);
+        }
+      }
     );
   };
 
