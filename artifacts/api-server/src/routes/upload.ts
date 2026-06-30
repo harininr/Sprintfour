@@ -50,9 +50,10 @@ router.post(
         // Use convertToHtml to preserve table cell alignments (tabs) and paragraph breaks
         const result = await mammoth.convertToHtml({ buffer });
         extractedText = result.value
+          .replace(/<\/p>\s*<\/td>/gi, '</td>') // strip </p> inside table cells
+          .replace(/<\/td>\s*<td[^>]*>/gi, '      ') // 6 spaces between cells
           .replace(/<\/p>/gi, '\n\n')
           .replace(/<\/tr>/gi, '\n')
-          .replace(/<\/td>/gi, '\t')
           .replace(/<br\s*\/?>/gi, '\n')
           .replace(/<[^>]+>/g, '') // strip remaining tags
           .replace(/&nbsp;/g, ' ')
@@ -64,9 +65,10 @@ router.post(
           const mammoth = await import("mammoth");
           const result = await mammoth.convertToHtml({ buffer });
           extractedText = result.value
+            .replace(/<\/p>\s*<\/td>/gi, '</td>')
+            .replace(/<\/td>\s*<td[^>]*>/gi, '      ')
             .replace(/<\/p>/gi, '\n\n')
             .replace(/<\/tr>/gi, '\n')
-            .replace(/<\/td>/gi, '\t')
             .replace(/<br\s*\/?>/gi, '\n')
             .replace(/<[^>]+>/g, '')
             .replace(/&nbsp;/g, ' ')

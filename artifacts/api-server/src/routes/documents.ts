@@ -252,5 +252,51 @@ router.post("/documents/:id/complete", async (req, res): Promise<void> => {
 
   res.json(doc);
 });
+router.get("/documents/:id/summary", async (req, res): Promise<void> => {
+  const params = GetDocumentParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const { data: redactions, error } = await supabase
+    .from("redactions")
+    .select("*")
+    .eq("document_id", params.data.id);
+
+  if (error || !redactions) {
+    res.status(500).json({ error: error?.message || "Failed to fetch redactions" });
+    return;
+  }
+
+  const totalRedactions = redactions.length;
+  const confirmedCount = redactions.filter((r: any) => r.status === "confirmed").length;
+  const rejectedCount = redactions.filter((r: any) => r.status === "rejected").length;
+  const userAddedCount = redactions.filter((r: any) => r.status === "user_added").length;
+  const pendingCount = redactions.filter((r: any) => r.status === "pending").length;
+
+  const riskScore = totalRedactions === 0 ? 0 : Math.round((pendingCount / totalRedactions) * 100);
+  const completionPercent = totalRedactions === 0 ? 100 : Math.round(((confirmedCount + rejectedCount + userAddedCount) / totalRedactions) * 100);
+
+  const categoryMap: Record<string, number> = {};
+  for (const r of redactions) {
+    if (r.category) {
+      categoryMap[r.category] = (categoryMap[r.category] || 0) + 1;
+    }
+  }
+  const categoryBreakdown = Object.entries(categoryMap).map(([category, count]) => ({ category, count }));
+
+  res.json({
+    documentId: params.data.id,
+    totalRedactions,
+    confirmedCount,
+    rejectedCount,
+    userAddedCount,
+    pendingCount,
+    riskScore,
+    completionPercent,
+    categoryBreakdown
+  });
+});
 
 export default router;
