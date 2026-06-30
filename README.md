@@ -1,8 +1,8 @@
-# Consensus Redact: Multi-Engine AI Privacy & PII Redaction
+# Redact Review: Multi-Engine AI Privacy & PII Redaction
 
 **Live Deployment Link:** [https://redactreview.onrender.com/](https://redactreview.onrender.com/)
 
-Consensus Redact is an enterprise-grade document redaction platform built for the absolute privacy requirements of the legal and healthcare sectors. By utilizing a **Triple-Engine AI Consensus Framework**, the system identifies and redacts Personally Identifiable Information (PII) with deterministic extraction, semantic context mapping, and multi-model consensus arbitration, completely eliminating the liabilities associated with single-engine AI false negatives.
+Redact Review is an enterprise-grade document redaction platform built for the absolute privacy requirements of the legal and healthcare sectors. By utilizing a **Triple-Engine AI Consensus Framework**, the system identifies and redacts Personally Identifiable Information (PII) with deterministic extraction, semantic context mapping, and multi-model consensus arbitration, completely eliminating the liabilities associated with single-engine AI false negatives.
 
 ---
 
