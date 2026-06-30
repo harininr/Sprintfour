@@ -36,7 +36,7 @@ export default function Login() {
       <div className="w-full lg:w-[45%] flex flex-col justify-center px-8 sm:px-16 lg:px-24 xl:px-32 relative z-10">
         <Link href="/" className="absolute top-10 left-8 sm:left-16 lg:left-24 inline-flex items-center gap-2.5 group cursor-pointer">
           <div className="w-9 h-9 bg-[#800000] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#800000]/20 group-hover:scale-105 transition-transform duration-300">
-            <span className="material-symbols-outlined text-[18px]">verified_user</span>{/* className="h-4 w-4" />
+            <span className="material-symbols-outlined text-[18px]">verified_user</span>
           </div>
           <span className="text-xl font-bold font-serif text-[#1e1b18] tracking-wide">Redact Review</span>
         </Link>
@@ -124,7 +124,7 @@ export default function Login() {
           className="relative z-10 max-w-lg text-center"
         >
           <div className="w-24 h-24 mx-auto mb-8 rounded-2xl bg-white border border-[#e2bfb9] shadow-xl flex items-center justify-center">
-             <span className="material-symbols-outlined text-[18px]">verified_user</span>{/* className="h-10 w-10 text-[#800000]" />
+             <span className="material-symbols-outlined text-[18px]">verified_user</span>
           </div>
           <h2 className="text-3xl font-serif font-bold text-[#1e1b18] mb-4">Enterprise-grade security, <br/> built for the modern web.</h2>
           <p className="text-gray-600 text-lg leading-relaxed">
