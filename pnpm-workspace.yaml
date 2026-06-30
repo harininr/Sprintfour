@@ -73,6 +73,8 @@ onlyBuiltDependencies:
   - esbuild
   - msw
   - unrs-resolver
+  - '@google/genai'
+  - protobufjs
 
 overrides:
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
@@ -80,5 +82,6 @@ overrides:
   esbuild: "0.27.3"
 
 allowBuilds:
-  '@google/genai': set this to true or false
-  protobufjs: set this to true or false
+  '@google/genai': true
+  protobufjs: true
+  esbuild: true
