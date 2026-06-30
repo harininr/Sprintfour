@@ -129,12 +129,18 @@ router.get("/documents/:id/export-redacted", async (req, res): Promise<void> => 
     return;
   }
 
-  const { data: redactions } = await supabase
+  const { data: redactions, error: redactionsError } = await supabase
     .from("redactions")
-    .select("start_offset, end_offset, category, text, bounding_boxes")
+    .select("*")
     .eq("document_id", doc.id)
     .in("status", ["confirmed", "user_added", "pending"])
     .order("start_offset", { ascending: false });
+
+  if (redactionsError) {
+    console.error("Error fetching redactions:", redactionsError);
+    res.status(500).json({ error: "Failed to fetch redactions" });
+    return;
+  }
 
   const originalExt = doc.title.split('.').pop()?.toLowerCase();
   const isPdf = originalExt === 'pdf' || (doc.file_path && doc.file_path.toLowerCase().endsWith('.pdf'));
