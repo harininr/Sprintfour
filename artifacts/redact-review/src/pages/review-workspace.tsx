@@ -1,25 +1,64 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useParams, useLocation } from "wouter";
-import { 
-  useGetDocument, 
-  useCompleteReview, 
+import {
+  useGetDocument,
+  useCompleteReview,
   getGetDocumentQueryKey,
   useUpdateRedaction,
   useGetSuspiciousText,
+  getGetSuspiciousTextQueryKey,
   useCreateRedaction,
   useDeleteRedaction,
   RedactionInputCategory,
-  Redaction
+  Redaction,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerTrigger } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, X, AlertTriangle, Eye, ShieldAlert, ArrowLeft, MousePointerSquareDashed, Trash2 } from "lucide-react";
+import {
+  ArrowLeft, MousePointerSquareDashed, X, ShieldAlert, Undo2,
+  AlertTriangle, Keyboard, LayoutPanelLeft, SplitSquareHorizontal,
+  FileText, Check, Eye, Info,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+
+import { useReviewBehavior } from "@/hooks/useReviewBehavior";
+import { AIAuditorWidget } from "@/components/AIAuditorWidget";
+
+import {
+  getSeverity, parseConsensus, isSecondOpinion, sortReviewQueue,
+  SEVERITY_COLORS,
+} from "@/lib/review-utils";
+
+import { FinalSafetyScanModal } from "@/components/PreviewExportModal";
+import { CompleteReviewModal } from "@/components/CompleteReviewModal";
+import { ReviewSidebar } from "@/components/review/ReviewSidebar";
+import { EntityDetailPanel } from "@/components/review/EntityDetailPanel";
+import { RemainingRiskBanner } from "@/components/review/RemainingRiskBanner";
+import { PDFViewer } from "@/components/review/PDFViewer";
+
+type DocViewMode = "original" | "reviewed" | "export";
+
+// Helper to build redacted content
+function buildRedactedContent(content: string, redactions: any[], mode: DocViewMode): string {
+  if (mode === "original") return content;
+  const active = (redactions || []).filter(r =>
+    mode === "export"
+      ? (r.status === "confirmed" || r.status === "user_added")
+      : r.status === "confirmed" || r.status === "user_added" || r.status === "rejected"
+  );
+  let result = content;
+  const sorted = [...active].sort((a, b) => b.startOffset - a.startOffset);
+  for (const r of sorted) {
+    if (mode === "export") {
+      result = result.slice(0, r.startOffset) + `[REDACTED ${r.category.toUpperCase()}]` + result.slice(r.endOffset);
+    }
+  }
+  return result;
+}
 
 export default function ReviewWorkspace() {
   const params = useParams();
@@ -27,506 +66,630 @@ export default function ReviewWorkspace() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
-  const { data: document, isLoading } = useGetDocument(id, { query: { enabled: !!id, queryKey: getGetDocumentQueryKey(id) } });
-  const { data: suspiciousText } = useGetSuspiciousText(id, { query: { enabled: !!id } });
+  const { data: document, isLoading } = useGetDocument(id, {
+    query: {
+      enabled: !!id,
+      queryKey: getGetDocumentQueryKey(id),
+      refetchInterval: (query: any) =>
+        query?.state?.data?.redactions?.length === 0 ? 2000 : false,
+    },
+  });
+  const { data: suspiciousText } = useGetSuspiciousText(id, {
+    query: { enabled: !!id, queryKey: getGetSuspiciousTextQueryKey(id) },
+  });
+
   const completeMutation = useCompleteReview();
   const updateRedaction = useUpdateRedaction();
   const createRedaction = useCreateRedaction();
   const deleteRedaction = useDeleteRedaction();
 
-  const [activeTab, setActiveTab] = useState<"pending"|"confirmed"|"rejected"|"user">("pending");
-  const [selectedRedactionId, setSelectedRedactionId] = useState<string|null>(null);
+  const [activeTab, setActiveTab] = useState<"pending" | "confirmed" | "rejected" | "user">("pending");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detailPanelId, setDetailPanelId] = useState<string | null>(null);
   const [suspiciousDrawerOpen, setSuspiciousDrawerOpen] = useState(false);
+  const [docViewMode, setDocViewMode] = useState<DocViewMode>("original");
+  const [showShortcuts, setShowShortcuts] = useState(false);
 
-  // Keyboard navigation state
-  const pendingRedactions = useMemo(() => document?.redactions?.filter(r => r.status === "pending") || [], [document]);
-  
-  const handleStatusChange = (redactionId: string, status: "confirmed" | "rejected" | "pending") => {
+  const { recordAction, actions } = useReviewBehavior();
+  const [undoStack, setUndoStack] = useState<{ id: string; prevStatus: string }[]>([]);
+  const [completeModalOpen, setCompleteModalOpen] = useState(false);
+
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [selection, setSelection] = useState<{ start: number; end: number; text: string; x: number; y: number; boundingBoxes?: string } | null>(null);
+  const [newCategory, setNewCategory] = useState<RedactionInputCategory>("other");
+
+  const handlePdfSelection = (sel: { text: string; x: number; y: number; boundingBoxes: string }) => {
+    setSelection({
+      start: 0,
+      end: sel.text.length,
+      text: sel.text,
+      x: sel.x,
+      y: sel.y,
+      boundingBoxes: sel.boundingBoxes
+    });
+  };
+
+  const redactions = useMemo(() => document?.redactions || [], [document]);
+
+  const pendingRedactions = useMemo(
+    () => sortReviewQueue(redactions.filter(r => r.status === "pending")),
+    [redactions]
+  );
+  const confirmedRedactions = useMemo(() => redactions.filter(r => r.status === "confirmed"), [redactions]);
+  const rejectedRedactions  = useMemo(() => redactions.filter(r => r.status === "rejected"), [redactions]);
+  const userRedactions      = useMemo(() => redactions.filter(r => r.status === "user_added"), [redactions]);
+
+  const totalReviewed = confirmedRedactions.length + rejectedRedactions.length + userRedactions.length;
+  const totalItems = redactions.length;
+  const progress = totalItems > 0 ? (totalReviewed / totalItems) * 100 : 100;
+
+  // ── Actions ──────────────────────────────────────────────────────────────────
+  const handleStatusChange = (redactionId: string, status: "confirmed" | "rejected" | "pending" | "ignored") => {
+    const existing = redactions.find(r => r.id === redactionId);
+    if (existing) setUndoStack(prev => [...prev, { id: redactionId, prevStatus: existing.status }]);
+    if (status !== "pending") recordAction(redactionId, status as any);
+    const apiStatus = status === "ignored" ? "rejected" : status;
     updateRedaction.mutate(
-      { id, redactionId, data: { status } },
+      { id, redactionId, data: { status: apiStatus as any } },
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetDocumentQueryKey(id) }) }
+    );
+  };
+
+  const handleCategoryChange = (redactionId: string, category: string) => {
+    updateRedaction.mutate(
+      { id, redactionId, data: { category: category as any } },
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetDocumentQueryKey(id) }) }
+    );
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length === 0) return;
+    const last = undoStack[undoStack.length - 1];
+    setUndoStack(prev => prev.slice(0, -1));
+    updateRedaction.mutate(
+      { id, redactionId: last.id, data: { status: last.prevStatus as any } },
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetDocumentQueryKey(id) });
-        }
+          toast.success("Action undone");
+        },
       }
     );
   };
 
-  const handleDeleteRedaction = (redactionId: string) => {
+  const handleDelete = (redactionId: string) => {
     deleteRedaction.mutate(
       { id, redactionId },
-      {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetDocumentQueryKey(id) });
-        }
-      }
+      { onSuccess: () => queryClient.invalidateQueries({ queryKey: getGetDocumentQueryKey(id) }) }
     );
   };
 
+  // Opens confirmation modal — actual API call happens after user confirms
   const handleComplete = () => {
+    setCompleteModalOpen(true);
+  };
+
+  const handleConfirmedComplete = () => {
     completeMutation.mutate(
       { id },
-      {
-        onSuccess: () => {
-          setLocation(`/review/${id}/complete`);
-        }
-      }
+      { onSuccess: () => { setCompleteModalOpen(false); setLocation(`/review/${id}/complete`); } }
     );
   };
 
+  const handleJump = (redactionId: string) => {
+    setSelectedId(redactionId);
+    window.document.getElementById(`doc-redaction-${redactionId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Switch to pending tab if item is pending
+    const r = redactions.find(x => x.id === redactionId);
+    if (r?.status === "pending") setActiveTab("pending");
+  };
+
+  // ── Keyboard Shortcuts ────────────────────────────────────────────────────────
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
-      if (e.key === 's' || e.key === 'S') {
-        setSuspiciousDrawerOpen(prev => !prev);
-      }
+      if (e.key === "s" || e.key === "S") { setSuspiciousDrawerOpen(p => !p); return; }
+      if (e.key === "?" || e.key === "/") { setShowShortcuts(p => !p); return; }
+      if (e.key === "z" && (e.metaKey || e.ctrlKey)) { handleUndo(); return; }
 
       if (pendingRedactions.length === 0) return;
 
-      const currentIndex = pendingRedactions.findIndex(r => r.id === selectedRedactionId);
+      const currentIdx = pendingRedactions.findIndex(r => r.id === selectedId);
 
-      if (e.key === 'j' || e.key === 'J') {
-        const nextIndex = currentIndex < pendingRedactions.length - 1 ? currentIndex + 1 : 0;
-        setSelectedRedactionId(pendingRedactions[nextIndex].id);
-        window.document.getElementById(`redaction-${pendingRedactions[nextIndex].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Navigate
+      if (e.key === "n" || e.key === "N" || e.key === "j" || e.key === "J") {
+        const next = currentIdx < pendingRedactions.length - 1 ? currentIdx + 1 : 0;
+        const r = pendingRedactions[next];
+        setSelectedId(r.id);
+        window.document.getElementById(`doc-redaction-${r.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
       }
-      if (e.key === 'k' || e.key === 'K') {
-        const prevIndex = currentIndex > 0 ? currentIndex - 1 : pendingRedactions.length - 1;
-        setSelectedRedactionId(pendingRedactions[prevIndex].id);
-        window.document.getElementById(`redaction-${pendingRedactions[prevIndex].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (e.key === "p" || e.key === "P" || e.key === "k" || e.key === "K") {
+        const prev = currentIdx > 0 ? currentIdx - 1 : pendingRedactions.length - 1;
+        const r = pendingRedactions[prev];
+        setSelectedId(r.id);
+        window.document.getElementById(`doc-redaction-${r.id}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
       }
 
-      if (selectedRedactionId) {
-        if (e.key === 'c' || e.key === 'C') {
-          handleStatusChange(selectedRedactionId, "confirmed");
-        }
-        if (e.key === 'r' || e.key === 'R') {
-          handleStatusChange(selectedRedactionId, "rejected");
-        }
-      }
+      if (!selectedId) return;
+      // Actions on selected
+      if (e.key === "r" || e.key === "R") handleStatusChange(selectedId, "confirmed");
+      if (e.key === "i" || e.key === "I") handleStatusChange(selectedId, "rejected");
+      if (e.key === "e" || e.key === "E") setDetailPanelId(selectedId);
+      if (e.key === " ") { e.preventDefault(); setDetailPanelId(p => p === selectedId ? null : selectedId); }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [pendingRedactions, selectedRedactionId, id, queryClient, updateRedaction]);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [pendingRedactions, selectedId, id, undoStack]);
 
-  // Selection for new redaction
-  const [selection, setSelection] = useState<{start: number, end: number, text: string, x: number, y: number} | null>(null);
-  const [newCategory, setNewCategory] = useState<RedactionInputCategory>("other");
-  const contentRef = useRef<HTMLDivElement>(null);
-
+  // ── Manual Redaction ──────────────────────────────────────────────────────────
   const handleMouseUp = () => {
+    if (docViewMode !== "original") return;
     const sel = window.getSelection();
-    if (!sel || sel.isCollapsed || !contentRef.current) {
-      if (!selection) return;
-      return; 
-    }
-
+    if (!sel || sel.isCollapsed || !contentRef.current) return;
     const range = sel.getRangeAt(0);
-    const preSelectionRange = range.cloneRange();
-    preSelectionRange.selectNodeContents(contentRef.current);
-    preSelectionRange.setEnd(range.startContainer, range.startOffset);
-    const start = preSelectionRange.toString().length;
+    const pre = range.cloneRange();
+    pre.selectNodeContents(contentRef.current);
+    pre.setEnd(range.startContainer, range.startOffset);
+    const start = pre.toString().length;
     const text = sel.toString();
-    const end = start + text.length;
-
     const rect = range.getBoundingClientRect();
-    
-    setSelection({
-      start,
-      end,
-      text,
-      x: rect.left + rect.width / 2,
-      y: rect.top - 10
-    });
+    setSelection({ start, end: start + text.length, text, x: rect.left + rect.width / 2, y: rect.top - 10 });
   };
 
   const handleAddRedaction = () => {
     if (!selection) return;
     createRedaction.mutate(
-      {
-        id,
-        data: {
-          startOffset: selection.start,
-          endOffset: selection.end,
-          text: selection.text,
-          category: newCategory
-        }
+      { 
+        id, 
+        data: { 
+          startOffset: selection.start, 
+          endOffset: selection.end, 
+          text: selection.text, 
+          category: newCategory,
+          boundingBoxes: selection.boundingBoxes 
+        } 
       },
       {
         onSuccess: () => {
           setSelection(null);
           window.getSelection()?.removeAllRanges();
           queryClient.invalidateQueries({ queryKey: getGetDocumentQueryKey(id) });
-        }
+        },
       }
     );
   };
 
+  // ── Build Document Chunks ─────────────────────────────────────────────────────
+  // Only highlight items from the sidebar (AI-detected redactions).
+  // Suspicious/detection-engine spans are NOT highlighted in the document.
+  const chunks = useMemo(() => {
+    const result: { text: string; redaction?: Redaction; isNormal?: boolean; id: string }[] = [];
+    if (!document?.content) return result;
+    const markers = redactions.map(r => ({ ...r, type: "redaction" }));
+    markers.sort((a, b) => a.startOffset - b.startOffset);
+
+    let lastIdx = 0;
+    markers.forEach(m => {
+      if (m.startOffset > lastIdx) result.push({ text: document.content.substring(lastIdx, m.startOffset), isNormal: true, id: `norm-${lastIdx}` });
+      result.push({ text: m.text, redaction: m, id: `red-${m.id}` });
+      lastIdx = Math.max(lastIdx, m.endOffset);
+    });
+    if (lastIdx < document.content.length) result.push({ text: document.content.substring(lastIdx), isNormal: true, id: `norm-${lastIdx}` });
+    return result;
+  }, [document, redactions]);
+
+  // ── Similar entity count ──────────────────────────────────────────────────────
+  const getSimilarCount = (r: Redaction) => redactions.filter(x => x.text === r.text && x.id !== r.id).length;
+
+  // ── Loading ───────────────────────────────────────────────────────────────────
   if (isLoading || !document) return (
-    <div className="h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4 text-[#1E1E1E]">
-        <ShieldAlert className="h-12 w-12 text-[#6B1E2B] animate-pulse" />
-        <p className="font-serif text-xl">Loading secure workspace...</p>
-        <p className="text-muted-foreground text-sm font-sans">Preparing document and analytics.</p>
+    <div className="h-screen flex items-center justify-center bg-[#F5F1EA]">
+      <div className="flex flex-col items-center gap-4">
+        <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}>
+          <ShieldAlert className="h-10 w-10 text-[#6B1E2B]" />
+        </motion.div>
+        <p className="font-serif text-xl text-[#1F1F1F]">Loading secure workspace…</p>
+        <p className="text-sm text-[#888]">Preparing document and AI analysis.</p>
       </div>
     </div>
   );
 
-  const redactions = document.redactions || [];
-  const confirmed = redactions.filter(r => r.status === "confirmed");
-  const rejected = redactions.filter(r => r.status === "rejected");
-  const userAdded = redactions.filter(r => r.status === "user_added");
-
-  const activeList = 
-    activeTab === "pending" ? pendingRedactions : 
-    activeTab === "confirmed" ? confirmed : 
-    activeTab === "rejected" ? rejected : userAdded;
-
-  const totalReviewed = confirmed.length + rejected.length + userAdded.length;
-  const totalItems = redactions.length;
-  const progress = totalItems > 0 ? (totalReviewed / totalItems) * 100 : 100;
-
-  // Build text chunks
-  let chunks: { text: string; redaction?: Redaction; suspicious?: any; isNormal?: boolean; id: string }[] = [];
-  
-  if (document.content) {
-    const markers: any[] = [];
-    redactions.forEach(r => markers.push({ ...r, type: 'redaction' }));
-    if (suspiciousText) {
-      suspiciousText.forEach((s: any) => {
-        const overlaps = redactions.some(r => 
-          (s.startOffset >= r.startOffset && s.startOffset < r.endOffset) ||
-          (s.endOffset > r.startOffset && s.endOffset <= r.endOffset) ||
-          (s.startOffset <= r.startOffset && s.endOffset >= r.endOffset)
-        );
-        if (!overlaps) {
-          markers.push({ ...s, type: 'suspicious', id: `suspicious-${s.startOffset}` });
-        }
-      });
-    }
-
-    markers.sort((a, b) => a.startOffset - b.startOffset);
-
-    let lastIdx = 0;
-    markers.forEach((m) => {
-      if (m.startOffset > lastIdx) {
-        chunks.push({ text: document.content.substring(lastIdx, m.startOffset), isNormal: true, id: `norm-${lastIdx}` });
-      }
-      if (m.type === 'redaction') {
-        chunks.push({ text: m.text, redaction: m, id: `red-${m.id}` });
-      } else {
-        chunks.push({ text: m.text, suspicious: m, id: `susp-${m.id}` });
-      }
-      lastIdx = Math.max(lastIdx, m.endOffset);
-    });
-    if (lastIdx < document.content.length) {
-      chunks.push({ text: document.content.substring(lastIdx), isNormal: true, id: `norm-${lastIdx}` });
-    }
-  }
+  const detailRedaction = detailPanelId ? redactions.find(r => r.id === detailPanelId) : null;
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden text-foreground">
-      {/* Topbar */}
-      <header className="h-14 shrink-0 bg-[#FFFDF9] border-b border-[#E5DDD2] shadow-sm px-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/")} className="text-[#666666]">
-            <ArrowLeft className="h-5 w-5" />
+    <div className="h-screen flex flex-col overflow-hidden text-[#1F1F1F]" style={{ background: "#F5F1EA" }}>
+
+      {/* ── Topbar ─────────────────────────────────────────────────────────────── */}
+      <header className="h-14 shrink-0 bg-[#FFFDF9] border-b border-[#E8DED1] shadow-sm px-4 flex items-center justify-between z-30">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/")} className="text-[#666]">
+            <ArrowLeft className="h-4 w-4" />
           </Button>
-          <div className="h-6 w-px bg-[#E5DDD2]"></div>
-          <h1 className="font-serif font-semibold text-[#1E1E1E] text-lg truncate max-w-xs">{document.title}</h1>
+          <div className="h-5 w-px bg-[#E8DED1]" />
+          <h1 className="font-serif font-semibold text-[#1F1F1F] text-base truncate max-w-[180px]">{document.title}</h1>
         </div>
-        
-        <div className="flex items-center gap-4 w-48">
-          <div className="flex flex-col w-full">
-            <div className="flex justify-between text-[11px] text-[#888888] font-medium mb-1">
+
+        {/* Center: Progress */}
+        <div className="flex items-center gap-3 w-52">
+          <div className="flex flex-col w-full gap-0.5">
+            <div className="flex justify-between text-[10px] text-[#888] font-medium">
               <span>{totalReviewed} / {totalItems} reviewed</span>
+              <span>{Math.round(progress)}%</span>
             </div>
-            <div className="h-1 w-full bg-[#E5DDD2] rounded-full overflow-hidden">
-               <div className="h-full bg-[#6B1E2B] transition-all" style={{ width: `${progress}%` }} />
+            <div className="h-1.5 w-full bg-[#E8DED1] rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-[#6B1E2B] rounded-full"
+                animate={{ width: `${progress}%` }}
+                transition={{ duration: 0.5 }}
+              />
             </div>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          {suspiciousText && suspiciousText.length > 0 && (
-            <Drawer open={suspiciousDrawerOpen} onOpenChange={setSuspiciousDrawerOpen}>
-              <DrawerTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2 bg-orange-500 text-white border-none hover:bg-orange-600 animate-in slide-in-from-top-2">
-                  <span className="flex h-2 w-2 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
-                  </span>
-                  {suspiciousText.length} Alerts
-                </Button>
-              </DrawerTrigger>
-              <DrawerContent className="bg-[#FFFDF9]">
-                <div className="mx-auto w-full max-w-2xl">
-                  <DrawerHeader>
-                    <DrawerTitle className="flex items-center gap-2 text-[#1E1E1E] font-serif text-xl">
-                      <AlertTriangle className="h-5 w-5 text-orange-500" />
-                      Suspicious Spans
-                    </DrawerTitle>
-                    <DrawerDescription className="text-[#666666]">
-                      Review spans missed by AI detection.
-                    </DrawerDescription>
-                  </DrawerHeader>
-                  <div className="p-4 space-y-4 max-h-[50vh] overflow-y-auto">
-                    {suspiciousText.map((st: any, i: number) => (
-                      <div key={i} className="flex flex-col gap-2 p-4 border border-orange-200 bg-orange-50 rounded-xl">
-                        <div className="font-mono text-sm bg-white p-2 rounded-md border border-orange-100 text-[#1E1E1E]">{st.text}</div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">{st.reason}</span>
-                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${st.riskLevel === 'high' ? 'bg-[#A92B2B] text-white' : st.riskLevel === 'medium' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}`}>{st.riskLevel}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </DrawerContent>
-            </Drawer>
-          )}
+        {/* Right: Controls */}
+        <div className="flex items-center gap-2">
 
-          <div className="hidden lg:flex items-center gap-2">
-            <kbd className="font-mono text-xs bg-[#F5F1EA] text-[#666666] px-1.5 py-0.5 rounded">J/K</kbd>
-            <kbd className="font-mono text-xs bg-[#F5F1EA] text-[#666666] px-1.5 py-0.5 rounded">C/R</kbd>
+          {/* View Mode Toggle */}
+          <div className="flex bg-[#F5F1EA] border border-[#E8DED1] rounded-lg p-0.5 gap-0.5">
+            {(["original", "reviewed", "export"] as DocViewMode[]).map(mode => {
+              const icons = { original: <FileText className="h-3 w-3" />, reviewed: <Eye className="h-3 w-3" />, export: <SplitSquareHorizontal className="h-3 w-3" /> };
+              const labels = { original: "Original", reviewed: "Reviewed", export: "Export" };
+              return (
+                <button
+                  key={mode}
+                  onClick={() => setDocViewMode(mode)}
+                  className={`flex items-center gap-1 px-2 py-1 text-[10px] font-medium rounded-md transition-all ${
+                    docViewMode === mode ? "bg-[#FFFDF9] shadow-sm text-[#1F1F1F]" : "text-[#888]"
+                  }`}
+                >
+                  {icons[mode]} {labels[mode]}
+                </button>
+              );
+            })}
           </div>
 
-          <Button 
-            disabled={pendingRedactions.length > 0 || completeMutation.isPending} 
-            onClick={handleComplete}
-            className="font-medium bg-[#6B1E2B] text-white hover:bg-[#7D2334] disabled:opacity-40"
+          {/* Keyboard hints */}
+          <Button
+            variant="ghost" size="icon"
+            className="h-8 w-8 text-[#888] hover:text-[#1F1F1F]"
+            onClick={() => setShowShortcuts(p => !p)}
           >
-            Complete Review
+            <Keyboard className="h-4 w-4" />
+          </Button>
+
+          {/* Undo */}
+          <Button
+            variant="ghost" size="sm"
+            onClick={handleUndo}
+            disabled={undoStack.length === 0}
+            className="text-[#888] hover:text-[#1F1F1F] gap-1.5 text-xs"
+          >
+            <Undo2 className="h-3.5 w-3.5" /> Undo
+          </Button>
+
+          {/* Complete */}
+          <Button
+            disabled={pendingRedactions.length > 0 || completeMutation.isPending}
+            onClick={handleComplete}
+            className="font-medium bg-[#6B1E2B] text-white hover:bg-[#7D2334] disabled:opacity-40 text-sm"
+          >
+            {completeMutation.isPending ? (
+              <span className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Completing…
+              </span>
+            ) : "Complete Review"}
           </Button>
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
-        {/* Document Panel */}
-        <main 
-          className="flex-1 overflow-y-auto bg-background"
-          onMouseUp={handleMouseUp}
-        >
-          <div className="max-w-[720px] mx-auto py-12 px-8">
-            <div className="rounded-lg border border-[#E5DDD2] bg-[#FFFDF9] px-4 py-2 text-sm text-[#666666] flex items-center gap-2 mb-8">
-              <MousePointerSquareDashed className="h-4 w-4" />
-              <span>Select any text to manually add a redaction.</span>
-            </div>
-            
-            <div 
-              ref={contentRef}
-              className="font-serif text-[17px] leading-[1.85] text-[#1E1E1E]/90 whitespace-pre-wrap"
-            >
-              {chunks.map((chunk) => {
-                if (chunk.isNormal) return <span key={chunk.id}>{chunk.text}</span>;
-                
-                if (chunk.redaction) {
-                  const r = chunk.redaction;
-                  const isSelected = selectedRedactionId === r.id;
-                  
-                  let highlightClass = "";
-                  if (r.status === "pending") highlightClass = "bg-amber-50 border-b-2 border-amber-400 text-amber-900 px-0.5 rounded-sm cursor-pointer transition-all duration-150 hover:bg-amber-100";
-                  else if (r.status === "confirmed") highlightClass = "bg-[#A92B2B] text-white px-0.5 rounded-sm cursor-pointer";
-                  else if (r.status === "rejected") highlightClass = "opacity-40 line-through decoration-gray-400 cursor-pointer";
-                  else if (r.status === "user_added") highlightClass = "bg-indigo-50 border-b-2 border-indigo-400 text-indigo-900 px-0.5 rounded-sm cursor-pointer transition-all duration-150";
-                  
-                  if (isSelected) highlightClass += " ring-2 ring-[#6B1E2B] ring-offset-1 z-10 relative";
+      {/* ── Risk Banner ───────────────────────────────────────────────────────── */}
+      <RemainingRiskBanner redactions={redactions} onJump={handleJump} />
 
-                  return (
-                    <Tooltip key={chunk.id}>
-                      <TooltipTrigger asChild>
-                        <span 
-                          id={`redaction-${r.id}`}
-                          className={highlightClass}
-                          onClick={() => setSelectedRedactionId(r.id)}
-                        >
-                          {chunk.text}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs font-sans">
-                        <div className="font-semibold capitalize">{r.category}</div>
-                        {r.source === 'ai' && (
-                          <div className="text-muted-foreground mt-0.5">{(r.confidence * 100).toFixed(0)}% AI confidence</div>
-                        )}
-                        {r.source === 'user' && (
-                          <div className="text-muted-foreground mt-0.5">Added by user</div>
-                        )}
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                }
-
-                if (chunk.suspicious) {
-                  return (
-                    <Tooltip key={chunk.id}>
-                      <TooltipTrigger asChild>
-                        <span 
-                          className="bg-orange-50 border-b-2 border-orange-400 font-medium animate-pulse cursor-help px-0.5 rounded-sm"
-                        >
-                          {chunk.text}
-                        </span>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs font-sans bg-orange-500 text-white border-none">
-                        <div className="font-semibold flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3" /> Missed Risk
-                        </div>
-                        <div className="mt-0.5 opacity-90">{chunk.suspicious.reason}</div>
-                      </TooltipContent>
-                    </Tooltip>
-                  );
-                }
-                
-                return null;
-              })}
-            </div>
-          </div>
-          
-          {/* Custom Selection Popover */}
-          {selection && (
-            <div 
-              className="fixed z-50 animate-in fade-in zoom-in-95 duration-200"
-              style={{ left: selection.x, top: selection.y, transform: 'translate(-50%, -100%)' }}
+      {/* ── Keyboard Shortcuts Overlay ────────────────────────────────────────── */}
+      <AnimatePresence>
+        {showShortcuts && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center"
+            onClick={() => setShowShortcuts(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-[#FFFDF9] border border-[#E8DED1] rounded-2xl p-8 shadow-2xl w-80"
+              onClick={e => e.stopPropagation()}
             >
-              <div className="bg-[#FFFDF9] border border-[#E5DDD2] shadow-xl rounded-xl p-4 flex flex-col gap-3 w-64">
-                <div className="text-sm font-medium font-serif">Mark as PII</div>
-                <div className="text-xs font-mono bg-[#F5F1EA] rounded-md px-2 py-1 text-[#1E1E1E] truncate">{selection.text}</div>
-                <div className="flex gap-2">
-                  <Select value={newCategory} onValueChange={(v: any) => setNewCategory(v)}>
-                    <SelectTrigger className="h-8 flex-1 text-xs">
-                      <SelectValue placeholder="Category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.values(RedactionInputCategory).map(cat => (
-                        <SelectItem key={cat} value={cat} className="capitalize text-xs">{cat}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button size="sm" onClick={handleAddRedaction} disabled={createRedaction.isPending} className="h-8 px-3 bg-[#6B1E2B] text-white hover:bg-[#7D2334]">
-                    Add
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setSelection(null)} className="h-8 px-2 text-[#666666]">
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
+              <h3 className="font-serif text-lg font-semibold text-[#1F1F1F] mb-5">Keyboard Shortcuts</h3>
+              <div className="space-y-2.5">
+                {[
+                  ["A", "Accept / Confirm"],
+                  ["R", "Reject"],
+                  ["I", "Ignore & Skip"],
+                  ["E / Space", "Show Detail"],
+                  ["N / J", "Next Entity"],
+                  ["P / K", "Previous Entity"],
+                  ["S", "Toggle Alerts"],
+                  ["⌘Z", "Undo Last Action"],
+                  ["?", "Toggle Shortcuts"],
+                ].map(([key, desc]) => (
+                  <div key={key} className="flex items-center justify-between">
+                    <span className="text-sm text-[#555]">{desc}</span>
+                    <kbd className="font-mono text-xs bg-[#F5F1EA] border border-[#E8DED1] text-[#1F1F1F] px-2 py-0.5 rounded-md">{key}</kbd>
+                  </div>
+                ))}
               </div>
-            </div>
-          )}
+              <Button className="w-full mt-6 bg-[#6B1E2B] text-white hover:bg-[#7D2334]" onClick={() => setShowShortcuts(false)}>
+                Got it
+              </Button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ── Body ─────────────────────────────────────────────────────────────── */}
+      <div className="flex-1 flex overflow-hidden">
+
+        {/* Document Panel */}
+<main className="flex-1 overflow-y-auto" onMouseUp={handleMouseUp}>
+          <div
+            className={`max-w-3xl mx-auto py-12 px-12 bg-[#FFFDF9] min-h-[800px] shadow-sm relative transition-all duration-300 ${activeTab === "rejected" ? "opacity-95" : ""
+              }`}
+            ref={contentRef}
+            onMouseUp={handleMouseUp}
+          >
+            {document.filePath && document.title.toLowerCase().endsWith('.pdf') ? (
+              <PDFViewer
+                documentId={id}
+                redactions={redactions}
+                selectedId={selectedId}
+                onRedactionClick={setSelectedId}
+                docViewMode={docViewMode}
+              />
+            ) : (
+              <>
+                {/* Document View Mode Label */}
+                {docViewMode !== "original" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-4 flex items-center gap-2 bg-[#FFFDF9] border border-[#E8DED1] rounded-xl px-4 py-2 text-xs text-[#666]"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    {docViewMode === "reviewed"
+                      ? "Reviewed view — showing document with confirmed redactions applied"
+                      : "Export preview — showing final redacted document"}
+                  </motion.div>
+                )}
+
+                {/* Manual selection hint */}
+                {docViewMode === "original" && (
+                  <div className="rounded-xl border border-[#E8DED1] bg-[#FFFDF9] px-4 py-2.5 text-xs text-[#888] flex items-center gap-2 mb-8 shadow-sm">
+                    <MousePointerSquareDashed className="h-3.5 w-3.5" />
+                    <span>Select any text to manually mark it as PII</span>
+                    <span className="ml-auto text-[#bbb]">Press <kbd className="font-mono bg-[#F5F1EA] px-1 rounded">?</kbd> for keyboard shortcuts</span>
+                  </div>
+                )}
+
+                {/* Document Content */}
+                {docViewMode === "original" ? (
+                  <div
+                    className="font-serif text-[17px] leading-[1.9] text-[#1F1F1F]/90 whitespace-pre-wrap"
+                  >
+                    {chunks.map(chunk => {
+                      if (chunk.isNormal) return <span key={chunk.id}>{chunk.text}</span>;
+
+                      if (chunk.redaction) {
+                        const r = chunk.redaction;
+                        const isSelected = selectedId === r.id;
+                        const consensus = parseConsensus(r.note);
+                        const isSecond = isSecondOpinion(consensus);
+                        const sev = getSeverity(r.category);
+                        const similarCount = getSimilarCount(r);
+
+                        let cls = "";
+                        if (isSecond && r.status === "pending") {
+                          cls = "bg-orange-100 border-b-2 border-orange-500 text-orange-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-orange-200";
+                        } else if (sev === "critical") {
+                          cls = "bg-red-100 border-b-2 border-red-600 text-red-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-red-200";
+                        } else if (sev === "high") {
+                          cls = "bg-orange-50 border-b-2 border-orange-400 text-orange-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-orange-100";
+                        } else {
+                          cls = "bg-amber-50 border-b-2 border-amber-400 text-amber-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-amber-100";
+                        }
+
+                        if (r.status === "user_added") {
+                          cls = "bg-indigo-100 border-b-2 border-indigo-500 text-indigo-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-indigo-200";
+                        }
+
+                        if (r.status === "confirmed" || r.status === "user_added") {
+                          cls += " line-through opacity-70";
+                        } else if (r.status === "rejected") {
+                          cls += " opacity-50";
+                        }
+
+                        if (isSelected) cls += " ring-2 ring-[#6B1E2B] ring-offset-1 z-10 relative";
+
+                        return (
+                          <Tooltip key={chunk.id} delayDuration={200}>
+                            <TooltipTrigger asChild>
+                              <span
+                                id={`doc-redaction-${r.id}`}
+                                className={cls}
+                                onClick={() => setSelectedId(r.id)}
+                              >
+                                {chunk.text}
+                                {r.status === "confirmed" && (
+                                  <sup className="text-[9px] ml-0.5 text-white font-bold bg-[#4C7A53] rounded px-1 py-0.5">R</sup>
+                                )}
+                                {r.status === "rejected" && (
+                                  <sup className="text-[9px] ml-0.5 text-white font-bold bg-gray-500 rounded px-1 py-0.5">I</sup>
+                                )}
+                                {r.status === "user_added" && (
+                                  <sup className="text-[9px] ml-0.5 text-white font-bold bg-[#6B1E2B] rounded px-1 py-0.5">R</sup>
+                                )}
+                                {similarCount > 0 && r.status === "pending" && (
+                                  <sup className="text-[8px] ml-0.5 text-[#6B1E2B] font-bold bg-white/80 rounded px-0.5 shadow-sm">+{similarCount}</sup>
+                                )}
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" className="text-xs font-sans bg-[#1F1F1F] text-white border-none max-w-48">
+                              <div className="font-semibold capitalize">{r.category}</div>
+                              <div className="text-white/70 mt-0.5 capitalize">{getSeverity(r.category)} severity</div>
+                              {consensus && <div className="text-white/70">{consensus.count}/3 models agree</div>}
+                              {isSecond && <div className="text-orange-300 font-medium mt-0.5">Second Opinion — 1 model only</div>}
+                              {similarCount > 0 && <div className="text-white/60 mt-0.5">Appears {similarCount} more time{similarCount > 1 ? "s" : ""}</div>}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      }
+
+                      return null;
+                    })}
+                  </div>
+                ) : (
+                  <div className="font-serif text-[17px] leading-[1.9] text-[#1F1F1F]/90 whitespace-pre-wrap">
+                    {docViewMode === "export"
+                      ? <FinalSafetyScanModal content={document.content} redactions={redactions} onExport={() => { 
+                          window.open(`/api/documents/${id}/export-redacted`, "_blank");
+                          toast.success("Document exported successfully"); 
+                          setLocation("/dashboard"); 
+                        }} />
+                      : document.content}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Manual Selection Popover */}
+          <AnimatePresence>
+            {selection && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="fixed z-50"
+                style={{ left: selection.x, top: selection.y, transform: "translate(-50%, -100%)" }}
+              >
+                <div className="bg-[#FFFDF9] border border-[#E8DED1] shadow-2xl rounded-2xl p-4 flex flex-col gap-3 w-64">
+                  <div className="text-sm font-serif font-semibold text-[#1F1F1F]">Mark as PII</div>
+                  <div className="text-xs font-mono bg-[#F5F1EA] rounded-lg px-2 py-1 text-[#1F1F1F] truncate">{selection.text}</div>
+                  <div className="flex gap-2">
+                    <Select value={newCategory} onValueChange={(v: any) => setNewCategory(v)}>
+                      <SelectTrigger className="h-8 flex-1 text-xs border-[#E8DED1]">
+                        <SelectValue placeholder="Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.values(RedactionInputCategory).map(cat => (
+                          <SelectItem key={cat} value={cat} className="capitalize text-xs">{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button size="sm" onClick={handleAddRedaction} disabled={createRedaction.isPending} className="h-8 px-3 bg-[#6B1E2B] text-white hover:bg-[#7D2334]">
+                      Add
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setSelection(null)} className="h-8 px-2">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
 
-        {/* Sidebar */}
-        <aside className="w-[380px] border-l border-[#E5DDD2] bg-[#FAF7F2] flex flex-col shadow-[-4px_0_20px_rgba(0,0,0,0.04)] z-10">
-          <div className="flex gap-1 p-2 border-b border-[#E5DDD2]">
-            <button 
-              className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${activeTab === 'pending' ? 'bg-[#FFFDF9] border border-[#E5DDD2] shadow-sm text-[#1E1E1E]' : 'text-[#888888] hover:bg-white/50'}`}
-              onClick={() => setActiveTab('pending')}
-            >
-              Review ({pendingRedactions.length})
-            </button>
-            <button 
-              className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${activeTab === 'confirmed' ? 'bg-[#FFFDF9] border border-[#E5DDD2] shadow-sm text-[#1E1E1E]' : 'text-[#888888] hover:bg-white/50'}`}
-              onClick={() => setActiveTab('confirmed')}
-            >
-              Conf ({confirmed.length})
-            </button>
-            <button 
-              className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${activeTab === 'rejected' ? 'bg-[#FFFDF9] border border-[#E5DDD2] shadow-sm text-[#1E1E1E]' : 'text-[#888888] hover:bg-white/50'}`}
-              onClick={() => setActiveTab('rejected')}
-            >
-              Rej ({rejected.length})
-            </button>
-            <button 
-              className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${activeTab === 'user' ? 'bg-[#FFFDF9] border border-[#E5DDD2] shadow-sm text-[#1E1E1E]' : 'text-[#888888] hover:bg-white/50'}`}
-              onClick={() => setActiveTab('user')}
-            >
-              Added ({userAdded.length})
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            <AnimatePresence>
-              {activeList.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center text-[#888888]">
-                  <Check className="h-10 w-10 opacity-50 mb-3" />
-                  <p className="text-sm font-medium">All clear</p>
-                </div>
-              ) : (
-                activeList.map(r => (
-                  <motion.div 
-                    key={r.id}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    whileHover={{ y: -1 }}
-                    className={`
-                      bg-[#FFFDF9] border border-[#E5DDD2] rounded-xl p-4 cursor-pointer
-                      ${selectedRedactionId === r.id ? 'border-[#6B1E2B] ring-1 ring-[#6B1E2B]/30' : ''}
-                    `}
-                    onClick={() => {
-                      setSelectedRedactionId(r.id);
-                      window.document.getElementById(`redaction-${r.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <span className="font-mono text-xs bg-[#F5F1EA] px-2 py-1 rounded-md text-[#1E1E1E] line-clamp-2">
-                        {r.text}
-                      </span>
-                      <span className="text-[10px] uppercase tracking-wider border rounded-full px-2 py-0.5 text-[#666666]">
-                        {r.category}
-                      </span>
-                    </div>
+        {/* ── Sidebar ───────────────────────────────────────────────────────────── */}
+        <div className="relative w-1/4 min-w-[560px] max-w-[400px] shrink-0 flex flex-col h-full overflow-hidden">
+          <ReviewSidebar
+            redactions={redactions}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            onConfirm={id => handleStatusChange(id, "confirmed")}
+            onReject={id => handleStatusChange(id, "rejected")}
+            onIgnore={id => handleStatusChange(id, "ignored")}
+            onDelete={handleDelete}
+            onShowDetail={setDetailPanelId}
+            onJump={handleJump}
+            onCategoryChange={handleCategoryChange}
+            actions={actions}
+            pendingList={pendingRedactions}
+            confirmedList={confirmedRedactions}
+            rejectedList={rejectedRedactions}
+            userList={userRedactions}
+          />
 
-                    {r.source === 'ai' && (
-                      <div className="h-1.5 rounded-full bg-[#E5DDD2] w-full overflow-hidden mt-2 mb-3">
-                        <div className={`h-full ${r.status === 'pending' ? 'bg-amber-400' : r.status === 'confirmed' ? 'bg-[#4C7A53]' : 'bg-gray-400'}`} style={{ width: `${r.confidence * 100}%` }} />
-                      </div>
-                    )}
-                    
-                    {activeTab === "pending" && (
-                      <div className="flex gap-2 mt-2">
-                        <Button 
-                          size="sm" 
-                          className="flex-1 bg-[#4C7A53] hover:bg-[#3d6343] text-white text-xs h-8" 
-                          onClick={(e) => { e.stopPropagation(); handleStatusChange(r.id, "confirmed"); }}
-                        >
-                          <Check className="h-3 w-3 mr-1" /> Confirm
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="flex-1 border border-[#E5DDD2] text-[#666666] hover:border-[#A92B2B] hover:text-[#A92B2B] text-xs h-8" 
-                          onClick={(e) => { e.stopPropagation(); handleStatusChange(r.id, "rejected"); }}
-                        >
-                          <X className="h-3 w-3 mr-1" /> Reject
-                        </Button>
-                      </div>
-                    )}
-                    
-                    {activeTab !== "pending" && (
-                      <div className="flex justify-between items-center mt-2 pt-2 border-t border-[#E5DDD2] text-xs text-[#888888]">
-                        <span className="flex items-center gap-1">
-                          <Eye className="h-3 w-3" /> Reviewed
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 hover:text-[#A92B2B]"
-                            onClick={(e) => { e.stopPropagation(); handleDeleteRedaction(r.id); }}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
-                ))
-              )}
-            </AnimatePresence>
-          </div>
-        </aside>
+          {/* Detail Panel overlay */}
+          <AnimatePresence>
+            {detailPanelId && detailRedaction && (
+              <EntityDetailPanel
+                redaction={detailRedaction}
+                documentContent={document.content}
+                allRedactions={redactions}
+                onClose={() => setDetailPanelId(null)}
+                onCategoryChange={handleCategoryChange}
+                onConfirm={(rid) => handleStatusChange(rid, "confirmed")}
+                onReject={(rid) => handleStatusChange(rid, "rejected")}
+                onIgnore={(rid) => handleStatusChange(rid, "ignored")}
+                onConfirmAll={(ids) => ids.forEach(rid => handleStatusChange(rid, "confirmed"))}
+                onRejectAll={(ids) => ids.forEach(rid => handleStatusChange(rid, "rejected"))}
+              />
+            )}
+          </AnimatePresence>
+        </div>
       </div>
+
+      {/* ── Bottom Status Bar ─────────────────────────────────────────────── */}
+      <div className="shrink-0 h-9 bg-[#1F1F1F] text-white/60 flex items-center px-4 gap-6 text-[10px] font-mono z-20">
+        <div className="flex items-center gap-4">
+          <span className="text-white/40">Navigate</span>
+          <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-white/80">J</kbd>
+          <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-white/80">K</kbd>
+          <span className="text-white/40 ml-2">Redact</span>
+          <kbd className="bg-[#6B1E2B]/80 px-1.5 py-0.5 rounded text-white">R</kbd>
+          <span className="text-white/40 ml-2">Ignore</span>
+          <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-white/80">I</kbd>
+          <span className="text-white/40 ml-2">Undo</span>
+          <kbd className="bg-white/10 px-1.5 py-0.5 rounded text-white/80">⌘Z</kbd>
+        </div>
+        <div className="ml-auto flex items-center gap-5">
+          <span>
+            CONFLICTS: <span className="text-amber-400 font-bold">{redactions.filter(r => { try { const c = JSON.parse(r.note ?? '{}'); return c.count > 0 && c.count < 3 && r.status === 'pending'; } catch { return false; } }).length.toString().padStart(2,'0')}</span>
+          </span>
+          <span>
+            MATCHES: <span className="text-emerald-400 font-bold">{redactions.filter(r => r.status === 'pending').length.toString().padStart(2,'0')}</span>
+          </span>
+          <span>
+            UNRESOLVED: <span className="text-red-400 font-bold">{redactions.filter(r => { try { const c = JSON.parse(r.note ?? '{}'); return c.count === 1 && r.status === 'pending'; } catch { return false; } }).length.toString().padStart(2,'0')}</span>
+          </span>
+        </div>
+      </div>
+
+      {/* AI Auditor Floating Widget */}
+      <AIAuditorWidget documentId={id} />
+
+      {/* Complete Review Confirmation Modal */}
+      <CompleteReviewModal
+        open={completeModalOpen}
+        pendingCount={pendingRedactions.length}
+        confirmedCount={confirmedRedactions.length}
+        isCompleting={completeMutation.isPending}
+        onClose={() => setCompleteModalOpen(false)}
+        onProceedToFinalScan={handleConfirmedComplete}
+        onSkipAndExport={() => {
+          setCompleteModalOpen(false);
+          window.open(`/api/documents/${id}/export-redacted`, "_blank");
+        }}
+      />
     </div>
   );
 }
