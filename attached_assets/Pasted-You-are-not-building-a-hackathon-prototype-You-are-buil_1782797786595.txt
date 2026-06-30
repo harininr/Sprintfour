@@ -1,0 +1,762 @@
+You are not building a hackathon prototype.
+
+You are building a production-grade SaaS platform that could realistically be shipped to paying enterprise customers.
+
+Think like a Staff Software Engineer at Google, Stripe, Microsoft or Vercel.
+
+Every engineering decision should prioritize:
+
+• Scalability
+• Maintainability
+• Readability
+• Separation of Concerns
+• Extensibility
+• Security
+• Performance
+• User Experience
+• Accessibility
+
+Never sacrifice architecture for convenience.
+
+Never write quick hackathon code.
+
+Never hardcode values.
+
+Never duplicate code.
+
+Always prefer reusable abstractions.
+
+Always think long-term.
+
+Every feature should feel polished and production-ready.
+
+Every page should feel like a premium SaaS application.
+
+Never leave TODOs.
+
+Never leave placeholder components.
+
+Never generate incomplete features.
+
+Every feature must be completely functional.
+
+If a feature requires backend support, build the backend.
+
+If a feature requires frontend support, build the frontend.
+
+If a feature requires database support, create the schema.
+
+Never skip implementation.
+
+Always finish one feature completely before moving to the next.
+
+The application should remain runnable after every completed feature.
+
+
+You are an expert Full Stack Software Engineer, Senior Product Designer, UI/UX Engineer, and Solution Architect.
+
+Build a COMPLETE production-quality full-stack web application from scratch.
+
+IMPORTANT:
+- Do NOT create a demo or prototype.
+- Build a clean, scalable, modular application.
+- Follow best software engineering practices.
+- Write maintainable production-ready code.
+- Every feature should be fully functional.
+- Never use placeholders unless absolutely necessary.
+- Never simplify the requested architecture.
+- Never remove requested features.
+
+
+The project MUST NOT depend on ANY Replit-specific functionality.
+
+DO NOT use:
+
+- Replit Database
+- Replit Auth
+- Replit Secrets
+- Replit Object Storage
+- Replit Agent dependencies
+- Replit deployment configuration
+- Replit runtime APIs
+- Replit-specific packages
+
+The application MUST run perfectly on any local machine.
+
+It should work with:
+
+npm install
+npm run dev
+
+Backend:
+
+npm install
+npm run dev
+
+Use only standard Node.js libraries and npm packages.
+
+I will manually provide all environment variables in a .env file.
+
+Design the application accordingly.
+
+======================================================================
+PROJECT
+======================================================================
+
+Build an AI-powered document privacy review platform.
+
+Problem Statement:
+
+The application helps users review AI-generated PII redactions before documents are shared.
+
+The main user is a legal professional reviewing sensitive documents.
+
+The biggest risk is NOT incorrect redactions.
+
+The biggest risk is PII that the AI completely missed.
+
+The application should therefore focus on helping users discover invisible mistakes.
+
+The application should feel like a premium SaaS product.
+
+
+TECH STACK
+
+Frontend
+
+- React
+- Vite
+- Tailwind CSS
+- shadcn/ui
+- Framer Motion
+- React Router
+- Axios
+- Lucide Icons (STRICTLY NO EMOJIS - ONLY ICONS ARE ALLOWED)
+
+Backend
+
+- Node.js
+- Express.js
+
+Database
+
+Supabase
+
+Storage
+
+Supabase Storage
+
+Authentication
+
+None
+
+AI Providers
+
+- Gemini
+- Groq
+- OpenRouter
+
+All credentials must come from .env.
+
+Never hardcode API keys.
+
+Architecture Requirements
+
+Follow enterprise architecture.
+
+Frontend
+
+Presentation Layer
+
+↓
+
+Component Layer
+
+↓
+
+Hooks Layer
+
+↓
+
+Context Layer
+
+↓
+
+Service Layer
+
+↓
+
+API Layer
+
+Backend
+
+Routes
+
+↓
+
+Controllers
+
+↓
+
+Services
+
+↓
+
+AI Services
+
+↓
+
+Repositories
+
+↓
+
+Supabase
+
+Never mix responsibilities.
+
+Follow SOLID principles.
+
+Follow DRY.
+
+Follow KISS.
+
+
+======================================================================
+FOLDER STRUCTURE
+======================================================================
+
+client
+
+src
+
+components
+
+pages
+
+layouts
+
+hooks
+
+services
+
+utils
+
+contexts
+
+assets
+
+styles
+
+server
+
+controllers
+
+routes
+
+middleware
+
+services
+
+ai
+
+utils
+
+config
+
+Every folder must have a clear responsibility.
+
+Every page must have its own folder.
+
+Every component must be reusable.
+
+No page should exceed 300 lines.
+
+No component should exceed 200 lines.
+
+Business logic should never exist inside React components.
+
+API calls should only exist inside services.
+
+Never call axios directly inside components.
+
+Create reusable hooks.
+
+Create reusable utility functions.
+
+
+======================================================================
+DATABASE
+======================================================================
+
+Use Supabase.
+
+Store:
+
+Documents
+
+Review Progress
+
+User Corrections
+
+Review Status
+
+Allow users to leave and continue reviewing later.
+
+Implement automatic saving.
+
+Supabase Requirements
+
+Create normalized tables.
+
+Use UUID primary keys.
+
+Create indexes where appropriate.
+
+Enable Row Level Security.
+
+Use timestamps.
+
+Use foreign keys.
+
+Store uploaded PDFs in Supabase Storage.
+
+Persist every review action.
+
+Persist review progress automatically.
+
+Persist AI detections.
+
+Persist consensus results.
+
+Persist user corrections.
+
+
+Every endpoint must return
+
+success
+
+message
+
+data
+
+error
+
+timestamp
+
+Example
+
+{
+"success":true,
+"message":"Review Loaded",
+"data":{},
+"error":null
+}
+
+Use proper HTTP status codes.
+
+400
+
+401
+
+403
+
+404
+
+409
+
+422
+
+500
+
+Never expose stack traces.
+
+
+======================================================================
+AI ARCHITECTURE
+======================================================================
+
+The AI system must be modular.
+
+Each provider must have its own service.
+
+GeminiService
+
+GroqService
+
+OpenRouterService
+
+ConsensusService
+
+Each service must expose a common interface.
+
+The Consensus Engine must normalize outputs into a unified schema.
+
+The frontend must never know which AI produced the result.
+
+The frontend consumes only one standardized JSON response.
+
+If one provider fails,
+
+continue using the remaining providers.
+
+Never crash the review.
+
+Gracefully degrade.
+
+Retry transient failures.
+
+Log provider failures.
+
+======================================================================
+FEATURES
+======================================================================
+
+Implement ALL features.
+
+1 Upload PDF
+
+2 Extract document text
+
+3 Multi AI detection
+
+4 Consensus engine
+
+5 Second Opinion detection
+
+6 Interactive document viewer
+
+7 Color-coded inline highlights
+
+8 Review details panel
+
+9 One-click corrections
+
+10 Review queue
+
+11 Progress tracker
+
+12 Final safety scan before export
+
+13 Export reviewed document
+
+14 AI consensus visualization
+
+15 AI reasoning panel
+
+16 Confidence tiers
+
+17 Keyboard shortcuts
+
+18 Smart navigation
+
+19 Editable highlight boundaries
+
+20 Privacy summary dashboard
+
+21 Store uploaded documents
+
+22 Save review progress
+
+23 Resume later
+
+24 Auto save
+
+25 Review dashboard
+
+26 Live processing screen
+
+27 Smooth animations
+
+28 Toast notifications
+
+======================================================================
+USER EXPERIENCE
+======================================================================
+
+Workflow
+
+Landing Page
+
+↓
+
+Upload PDF
+
+↓
+
+Processing Screen
+
+↓
+
+Running Gemini
+
+↓
+
+Running Groq
+
+↓
+
+Running OpenRouter
+
+↓
+
+Consensus Generation
+
+↓
+
+Privacy Summary
+
+↓
+
+Review Workspace
+
+↓
+
+User Corrections
+
+↓
+
+Final Safety Scan
+
+↓
+
+Export
+
+The review workspace should have:
+
+Top Navigation
+
+Left Sidebar
+
+Review Queue
+
+Center
+
+Document Viewer
+
+Right Sidebar
+
+Selected Detection Details
+
+Every detection should display:
+
+Detected Text
+
+Entity Type
+
+Confidence
+
+AI Models that detected it
+
+Reason
+
+Available Actions
+
+Actions
+
+Accept
+
+Reject
+
+Redact
+
+Ignore
+
+Change Type
+
+Edit Highlight
+
+======================================================================
+DESIGN
+======================================================================
+
+Modern SaaS interface.
+
+Premium quality.
+
+Beautiful spacing.
+
+Rounded cards.
+
+Subtle gradients.
+
+Glassmorphism where appropriate.
+
+Dark mode.
+
+Light mode.
+
+Fully responsive.
+
+Excellent typography.
+
+Micro interactions.
+
+Smooth animations.
+
+Loading skeletons.
+
+Professional dashboard.
+
+
+The UI should resemble a modern enterprise SaaS.
+
+Inspirations
+
+Linear
+
+Vercel
+
+Notion
+
+Raycast
+
+Arc Browser
+
+Cursor IDE
+
+Avoid generic Bootstrap layouts.
+
+Every page should have excellent whitespace.
+
+Consistent spacing.
+
+Professional typography.
+
+Responsive cards.
+
+Premium tables.
+
+Animated transitions.
+
+Loading skeletons.
+
+Hover states.
+
+Empty states.
+
+Error states.
+
+Success states.
+
+Keyboard accessibility.
+
+Dark Mode.
+
+Light Mode.
+
+
+======================================================================
+EXPORT
+======================================================================
+
+Before exporting
+
+Run one final safety scan.
+
+If suspicious content remains
+
+Warn the user.
+
+Allow:
+
+Review Again
+
+Export Anyway
+
+======================================================================
+CODE QUALITY
+======================================================================
+
+Use:
+
+Reusable components
+
+Clean architecture
+
+Service layer
+
+API layer
+
+Hooks
+
+Error handling
+
+Loading states
+
+Empty states
+
+Responsive layouts
+
+Comments where necessary
+
+Proper naming conventions
+
+No duplicated code.
+
+======================================================================
+DELIVERABLE
+======================================================================
+
+Generate EVERYTHING.
+
+Generate the complete frontend.
+
+Generate the complete backend.
+
+Generate every API.
+
+Generate every React page.
+
+Generate every reusable component.
+
+Generate every custom hook.
+
+Generate every service.
+
+Generate every middleware.
+
+Generate every utility.
+
+Generate every database table.
+
+Generate every SQL migration.
+
+Generate every Supabase integration.
+
+Generate every AI service.
+
+Generate the Consensus Engine.
+
+Generate the document parser.
+
+Generate the export engine.
+
+Generate the README.
+
+Generate the .env.example.
+
+Generate setup instructions.
+
+Generate package.json files.
+
+Generate Tailwind configuration.
+
+Generate shadcn configuration.
+
+Generate complete documentation.
+
+Generate the project so that cloning the repository, adding environment variables, running npm install, and npm run dev starts the application successfully without requiring Replit or any platform-specific services.
+
+Do not stop until the entire application has been fully generated.
+
+
+
+Before generating code, first think like a senior software architect.
+
+Design the entire application architecture.
+
+Then generate the project incrementally.
+
+Do not skip architectural planning.
+
+Every implementation decision should optimize for production quality, extensibility, readability, and maintainability rather than speed of generation.	

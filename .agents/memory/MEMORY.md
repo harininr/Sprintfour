@@ -1,0 +1,2 @@
+- [Orval ListXParams collision](orval-list-params-collision.md) — query params on list endpoints generate a TypeScript collision; remove them from the spec and filter client-side.
+- [Orval body naming rule](orval-body-naming.md) — body schemas must be entity-shaped (e.g. RedactionInput) not operation-shaped (CreateRedactionBody) to avoid TS2308 in api-zod barrel.

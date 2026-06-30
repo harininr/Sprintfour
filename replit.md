@@ -1,10 +1,11 @@
-# [Project name]
+# Redact Review
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A PII redaction review platform that helps legal professionals catch what the AI missed — not just fix what it got wrong.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/redact-review run dev` — run the frontend (port 18767)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -14,6 +15,7 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
+- Frontend: React + Vite + Tailwind CSS + shadcn/ui + Framer Motion + Wouter
 - API: Express 5
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
@@ -22,15 +24,27 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — API contract (source of truth)
+- `lib/db/src/schema/documents.ts` — documents table
+- `lib/db/src/schema/redactions.ts` — redactions table (with category/status/source enums)
+- `artifacts/api-server/src/routes/documents.ts` — document CRUD + summary + complete
+- `artifacts/api-server/src/routes/redactions.ts` — redaction CRUD (confirm/reject/user-add)
+- `artifacts/api-server/src/routes/suspicious.ts` — PII pattern scanner for missed detections
+- `artifacts/redact-review/src/` — React frontend
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **Suspicious text detection is pure regex on the server**, not AI — runs at request time against unredacted spans. Patterns cover phone, email, SSN, DOB, names (title-prefixed), street addresses, credit cards, account numbers.
+- **Status model**: redactions have `status` (pending | confirmed | rejected | user_added) and `source` (ai | user). User-added redactions always start as `user_added`.
+- **False positive vs missed PII distinction**: the UI shows AI-flagged redactions in amber (pending) and user-found missed PII in purple. Suspicious text scanner findings shown in orange warning — highest visual priority.
+- **Document auto-transitions to `in_review` on first GET** — no separate "start review" API call needed.
+- **No auth** — this is a single-reviewer tool; auth can be added via Clerk when multi-user support is needed.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Dashboard: list documents, track review progress per document, create new documents
+- Review workspace: inline document highlighting, confirm/reject AI suggestions, keyboard shortcuts (J/K/C/R/S), select text to add missed PII, suspicious text scanner panel
+- Completion screen: category breakdown, risk score, review summary
 
 ## User preferences
 
@@ -38,7 +52,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The `listRedactions` endpoint must NOT have query parameters — Orval generates a `ListRedactionsParams` type that collides with the Zod schema of the same name. Filter client-side instead.
+- Body schema names must be entity-shaped (`RedactionInput`, not `CreateRedactionBody`) to avoid TS2308 collisions.
+- API server uses `pnpm run dev` which does build then start — changes require a rebuild.
 
 ## Pointers
 
