@@ -1,0 +1,560 @@
+You are extending an already existing production-grade AI Privacy Review platform.
+
+DO NOT rebuild the project.
+
+DO NOT modify the existing architecture.
+
+DO NOT remove any existing functionality.
+
+DO NOT change existing APIs unless absolutely necessary.
+
+Integrate the following two enterprise-grade features seamlessly into the existing application while maintaining the same design language, architecture, and coding standards.
+
+The implementation must feel like these features were part of the application from the beginning.
+
+====================================================================
+FEATURE 1
+AI PRIVACY AUDITOR
+====================================================================
+
+Create a new feature called
+
+Privacy Auditor
+
+The Privacy Auditor should be accessible from the Review page as a collapsible AI assistant panel and also from the top navigation.
+
+This is NOT a generic chatbot.
+
+It is a context-aware AI assistant that understands:
+
+• Original document
+• Current document
+• AI detections
+• Consensus results
+• User corrections
+• Review status
+• Remaining PII
+• Export readiness
+
+The assistant should answer questions based ONLY on the current review session.
+
+Example questions:
+
+- Have all dates been redacted?
+- Did we miss any phone numbers?
+- Are there still any names visible?
+- Show every remaining email.
+- List all passport numbers.
+- Which entities have low confidence?
+- Why wasn't this address redacted?
+- Can I safely upload this document to ChatGPT?
+- Which AI models disagreed?
+- Show all doubtful PII.
+- Give me a summary of this review.
+- Generate a compliance report.
+
+The backend should gather all session information and provide it as context to the AI.
+
+Never allow hallucinations.
+
+The AI must answer using only available review data.
+
+Create suggested prompts underneath the input box.
+
+Examples
+
+Check if all dates are redacted
+
+Show remaining phone numbers
+
+Can I safely share this document?
+
+Explain AI disagreements
+
+Summarize review
+
+The panel should have
+
+Modern chat UI
+
+Typing animation
+
+Streaming responses if possible
+
+Professional cards
+
+Lucide icons only
+
+Beautiful typography
+
+Scrollable conversation history
+
+The conversation should persist while the review session is active.
+
+====================================================================
+FEATURE 2
+PRIVACY INTELLIGENCE DASHBOARD
+====================================================================
+
+Create a completely new page called
+
+Privacy Intelligence
+
+This page performs a complete analysis of the reviewed document.
+
+This is NOT another review screen.
+
+It is an executive analysis dashboard.
+
+Layout
+
+Top Navigation
+
+↓
+
+Executive Summary Cards
+
+↓
+
+Analytics Section
+
+↓
+
+Charts
+
+↓
+
+AI Insights
+
+↓
+
+Recommendations
+
+↓
+
+Compliance Checklist
+
+↓
+
+Export Report
+
+====================================================================
+SECTION 1
+EXECUTIVE SUMMARY
+====================================================================
+
+Create premium statistic cards
+
+Privacy Score
+
+Overall Risk
+
+Detected PII
+
+Needs Review
+
+Second Opinions
+
+Export Readiness
+
+Use animated counters.
+
+====================================================================
+SECTION 2
+AI CONSENSUS ANALYSIS
+====================================================================
+
+Display
+
+Gemini detections
+
+Groq detections
+
+OpenRouter detections
+
+Agreement percentage
+
+Consensus percentage
+
+Visualize with
+
+Progress bars
+
+Cards
+
+Badges
+
+Agreement meters
+
+====================================================================
+SECTION 3
+PII BREAKDOWN
+====================================================================
+
+Display counts of
+
+Names
+
+Phone Numbers
+
+Emails
+
+Addresses
+
+DOB
+
+Passport
+
+PAN
+
+Credit Cards
+
+Organizations
+
+Each card should display
+
+Detected
+
+Redacted
+
+Remaining
+
+====================================================================
+SECTION 4
+DOUBTFUL PII
+====================================================================
+
+Create a table called
+
+Potentially Missed PII
+
+Each row
+
+Entity
+
+Location
+
+Detected By
+
+Confidence
+
+Reason
+
+Action
+
+Jump To Review
+
+These are entities detected by only one AI or marked as low confidence.
+
+====================================================================
+SECTION 5
+AI DISAGREEMENT REPORT
+====================================================================
+
+Display disagreements.
+
+Example
+
+Entity
+
+Gemini
+
+Person
+
+Groq
+
+Organization
+
+OpenRouter
+
+Nothing
+
+Consensus
+
+Manual Review Required
+
+Use beautiful comparison cards.
+
+====================================================================
+SECTION 6
+PRIVACY COVERAGE
+====================================================================
+
+Show progress bars.
+
+Names
+
+100%
+
+Emails
+
+100%
+
+Phones
+
+75%
+
+Addresses
+
+80%
+
+DOB
+
+100%
+
+Passport
+
+90%
+
+PAN
+
+100%
+
+====================================================================
+SECTION 7
+REMAINING RISK
+====================================================================
+
+List every remaining visible PII.
+
+Each should include
+
+Type
+
+Location
+
+Confidence
+
+Review Button
+
+====================================================================
+SECTION 8
+SMART INSIGHTS
+====================================================================
+
+Generate AI-powered insights.
+
+Examples
+
+Most risks are concentrated in page 2.
+
+The majority of disagreements involve person names.
+
+This document contains many repeated addresses.
+
+Phone numbers were successfully removed.
+
+One possible passport number remains.
+
+Present insights inside premium cards.
+
+====================================================================
+SECTION 9
+COMPLIANCE CHECKLIST
+====================================================================
+
+Generate checklist.
+
+✓ All emails removed
+
+✓ All phone numbers removed
+
+⚠ Address still visible
+
+✓ Passport removed
+
+⚠ Date still visible
+
+Each item should be clickable.
+
+====================================================================
+SECTION 10
+PRIVACY TIMELINE
+====================================================================
+
+Create an animated workflow.
+
+Document Uploaded
+
+↓
+
+AI Detection
+
+↓
+
+Consensus Built
+
+↓
+
+Human Review
+
+↓
+
+Corrections
+
+↓
+
+Final Safety Scan
+
+↓
+
+Ready for Export
+
+Highlight completed steps.
+
+====================================================================
+SECTION 11
+WHAT CHANGED
+====================================================================
+
+Compare
+
+Original AI
+
+↓
+
+Human Corrections
+
+↓
+
+Final Result
+
+Example
+
+Original AI detections
+
+34
+
+User corrections
+
+6
+
+False positives removed
+
+3
+
+Missed entities added
+
+2
+
+Final reviewed entities
+
+33
+
+Display using comparison cards.
+
+====================================================================
+SECTION 12
+FINAL VERDICT
+====================================================================
+
+Large premium card.
+
+Example
+
+Privacy Verdict
+
+Needs Attention
+
+Privacy Score
+
+92%
+
+Remaining Risk
+
+Low
+
+Recommendation
+
+Review two remaining phone numbers before exporting.
+
+====================================================================
+SECTION 13
+EXPORT PRIVACY REPORT
+====================================================================
+
+Generate downloadable PDF.
+
+Include
+
+Executive Summary
+
+Privacy Score
+
+Detected PII
+
+Remaining PII
+
+Consensus Analysis
+
+User Corrections
+
+Compliance Checklist
+
+Recommendations
+
+Timestamp
+
+====================================================================
+DESIGN
+====================================================================
+
+Follow existing application theme.
+
+Background
+
+Soft Beige
+
+Primary
+
+Deep Maroon
+
+Cards
+
+Off White
+
+Typography
+
+Playfair Display
+
+Inter
+
+Lucide Icons only.
+
+No emojis.
+
+Use Framer Motion animations.
+
+Premium enterprise SaaS appearance.
+
+Beautiful charts.
+
+Glassmorphism where appropriate.
+
+Lots of whitespace.
+
+Responsive.
+
+====================================================================
+IMPLEMENTATION
+====================================================================
+
+Reuse existing backend services.
+
+Reuse AI providers.
+
+Reuse consensus engine.
+
+Do not duplicate business logic.
+
+Create reusable components.
+
+Create reusable charts.
+
+Create reusable cards.
+
+Keep architecture modular.
+
+Do not break existing functionality.
+
+The new features should integrate seamlessly with the current application and feel like a natural extension of the product.
