@@ -34,20 +34,23 @@ export default function Register() {
   return (
     <div className="min-h-screen flex bg-white font-sans selection:bg-[#800000]/20">
       {/* Left side - Form */}
-      <div className="w-full lg:w-[45%] flex flex-col justify-center px-8 sm:px-16 lg:px-24 xl:px-32 relative z-10">
-        <Link href="/" className="absolute top-10 left-8 sm:left-16 lg:left-24 inline-flex items-center gap-2.5 group cursor-pointer">
-          <div className="w-9 h-9 bg-[#800000] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#800000]/20 group-hover:scale-105 transition-transform duration-300">
-            <span className="material-symbols-outlined text-[18px]">verified_user</span>
-          </div>
-          <span className="text-xl font-bold font-serif text-[#1e1b18] tracking-wide">Redact Review</span>
-        </Link>
+      <div className="w-full lg:w-[45%] flex flex-col px-8 sm:px-16 lg:px-24 xl:px-32 relative z-10 pt-10 pb-10 overflow-y-auto">
+        <div>
+          <Link href="/" className="inline-flex items-center gap-2.5 group cursor-pointer">
+            <div className="w-9 h-9 bg-[#800000] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#800000]/20 group-hover:scale-105 transition-transform duration-300">
+              <span className="material-symbols-outlined text-[18px]">verified_user</span>
+            </div>
+            <span className="text-xl font-bold font-serif text-[#1e1b18] tracking-wide">Redact Review</span>
+          </Link>
+        </div>
 
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="w-full max-w-[400px] mt-12"
-        >
+        <div className="flex-1 flex flex-col justify-center mt-8">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            className="w-full max-w-[400px]"
+          >
           <h1 className="text-3xl font-serif font-bold text-[#1e1b18] mb-3">Create an account</h1>
           <p className="text-gray-500 text-[15px] mb-10 leading-relaxed">
             Start auditing documents securely with multi-engine AI in seconds.
@@ -120,6 +123,7 @@ export default function Register() {
             </p>
           </div>
         </motion.div>
+        </div>
       </div>
 
       {/* Right side - Visual */}
