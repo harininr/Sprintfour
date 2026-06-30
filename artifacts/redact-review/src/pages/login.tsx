@@ -31,14 +31,14 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex bg-white font-sans selection:bg-[#6B1E2B]/20">
+    <div className="min-h-screen flex bg-white font-sans selection:bg-[#800000]/20">
       {/* Left side - Form */}
       <div className="w-full lg:w-[45%] flex flex-col justify-center px-8 sm:px-16 lg:px-24 xl:px-32 relative z-10">
         <Link href="/" className="absolute top-10 left-8 sm:left-16 lg:left-24 inline-flex items-center gap-2.5 group cursor-pointer">
-          <div className="w-9 h-9 bg-[#6B1E2B] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#6B1E2B]/20 group-hover:scale-105 transition-transform duration-300">
-            <ShieldCheck className="h-4 w-4" />
+          <div className="w-9 h-9 bg-[#800000] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#800000]/20 group-hover:scale-105 transition-transform duration-300">
+            <span className="material-symbols-outlined text-[18px]">verified_user</span>{/* className="h-4 w-4" />
           </div>
-          <span className="text-xl font-bold font-serif text-[#1F1F1F] tracking-wide">Privado</span>
+          <span className="text-xl font-bold font-serif text-[#1e1b18] tracking-wide">Redact Review</span>
         </Link>
 
         <motion.div
@@ -47,7 +47,7 @@ export default function Login() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="w-full max-w-[400px] mt-12"
         >
-          <h1 className="text-3xl font-serif font-bold text-[#1F1F1F] mb-3">Sign in</h1>
+          <h1 className="text-3xl font-serif font-bold text-[#1e1b18] mb-3">Sign in</h1>
           <p className="text-gray-500 text-[15px] mb-10 leading-relaxed">
             Welcome back. Access your secure workspace to manage and audit documents.
           </p>
@@ -56,14 +56,14 @@ export default function Login() {
             <div className="space-y-2">
               <label className="text-[13px] font-medium text-gray-700">Email address</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#6B1E2B] transition-colors">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#800000] transition-colors">
                   <Mail className="h-[18px] w-[18px]" />
                 </div>
                 <Input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-11 h-[52px] bg-gray-50 border-gray-200 text-gray-900 focus:bg-white focus:border-[#6B1E2B] focus:ring-1 focus:ring-[#6B1E2B] rounded-xl transition-all"
+                  className="pl-11 h-[52px] bg-gray-50 border-gray-200 text-gray-900 focus:bg-white focus:border-[#800000] focus:ring-1 focus:ring-[#800000] rounded-xl transition-all"
                   placeholder="name@company.com"
                 />
               </div>
@@ -72,17 +72,17 @@ export default function Login() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-[13px] font-medium text-gray-700">Password</label>
-                <a href="#" className="text-[13px] text-[#6B1E2B] hover:text-[#521721] font-medium transition-colors">Forgot password?</a>
+                <a href="#" className="text-[13px] text-[#800000] hover:text-[#570000] font-medium transition-colors">Forgot password?</a>
               </div>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#6B1E2B] transition-colors">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#800000] transition-colors">
                   <Lock className="h-[18px] w-[18px]" />
                 </div>
                 <Input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-11 h-[52px] bg-gray-50 border-gray-200 text-gray-900 focus:bg-white focus:border-[#6B1E2B] focus:ring-1 focus:ring-[#6B1E2B] rounded-xl transition-all"
+                  className="pl-11 h-[52px] bg-gray-50 border-gray-200 text-gray-900 focus:bg-white focus:border-[#800000] focus:ring-1 focus:ring-[#800000] rounded-xl transition-all"
                   placeholder="••••••••"
                 />
               </div>
@@ -91,7 +91,7 @@ export default function Login() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-[52px] bg-[#1F1F1F] text-white hover:bg-black rounded-xl shadow-lg shadow-black/5 font-semibold text-[15px] transition-all hover:scale-[1.02]"
+              className="w-full h-[52px] bg-[#1e1b18] text-white hover:bg-black rounded-xl shadow-lg shadow-black/5 font-semibold text-[15px] transition-all hover:scale-[1.02]"
             >
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign in"}
             </Button>
@@ -100,7 +100,7 @@ export default function Login() {
           <div className="mt-10 text-center">
             <p className="text-[14px] text-gray-500">
               Don't have an account?{" "}
-              <Link href="/register" className="text-[#1F1F1F] font-semibold hover:text-[#6B1E2B] transition-colors cursor-pointer">
+              <Link href="/register" className="text-[#1e1b18] font-semibold hover:text-[#800000] transition-colors cursor-pointer">
                 Create one now
               </Link>
             </p>
@@ -109,9 +109,9 @@ export default function Login() {
       </div>
 
       {/* Right side - Visual */}
-      <div className="hidden lg:flex flex-1 relative bg-[#FDFBF7] overflow-hidden items-center justify-center border-l border-[#E8DED1]">
+      <div className="hidden lg:flex flex-1 relative bg-[#fff8f5] overflow-hidden items-center justify-center border-l border-[#e2bfb9]">
         {/* Glow effects */}
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-[#6B1E2B] rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />
+        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-[#800000] rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />
         <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-amber-600 rounded-full mix-blend-multiply filter blur-[160px] opacity-10" />
         
         {/* Grid pattern */}
@@ -123,10 +123,10 @@ export default function Login() {
           transition={{ duration: 1, delay: 0.2 }}
           className="relative z-10 max-w-lg text-center"
         >
-          <div className="w-24 h-24 mx-auto mb-8 rounded-2xl bg-white border border-[#E8DED1] shadow-xl flex items-center justify-center">
-             <ShieldCheck className="h-10 w-10 text-[#6B1E2B]" />
+          <div className="w-24 h-24 mx-auto mb-8 rounded-2xl bg-white border border-[#e2bfb9] shadow-xl flex items-center justify-center">
+             <span className="material-symbols-outlined text-[18px]">verified_user</span>{/* className="h-10 w-10 text-[#800000]" />
           </div>
-          <h2 className="text-3xl font-serif font-bold text-[#1F1F1F] mb-4">Enterprise-grade security, <br/> built for the modern web.</h2>
+          <h2 className="text-3xl font-serif font-bold text-[#1e1b18] mb-4">Enterprise-grade security, <br/> built for the modern web.</h2>
           <p className="text-gray-600 text-lg leading-relaxed">
             Our multi-engine consensus models ensure zero false positives and absolute compliance with HIPAA and GDPR standards.
           </p>
