@@ -11,7 +11,6 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB cap
   fileFilter(_req, file, cb) {
     const allowed = [
-      "application/pdf",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "application/msword",
       "text/plain",
@@ -19,7 +18,7 @@ const upload = multer({
       "application/octet-stream", // fallback for some docx uploads
     ];
     const ext = path.extname(file.originalname).toLowerCase();
-    const allowedExts = [".pdf", ".docx", ".doc", ".txt", ".md", ".text"];
+    const allowedExts = [".docx", ".doc", ".txt", ".md", ".text"];
     if (allowed.includes(file.mimetype) || allowedExts.includes(ext)) {
       cb(null, true);
     } else {
@@ -42,27 +41,38 @@ router.post(
     let extractedText = "";
 
     try {
-      if (ext === ".pdf" || mimetype === "application/pdf") {
-        // Lazy-import pdf-parse so its side-effects don't slow startup
-        // @ts-ignore: No types available for the inner file
-        const pdfParseRaw = await import("pdf-parse/lib/pdf-parse.js") as any;
-        const pdfParse = pdfParseRaw.default || pdfParseRaw;
-        const result = await pdfParse(buffer);
-        extractedText = result.text;
-      } else if (
+      if (
         ext === ".docx" ||
         mimetype ===
           "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
       ) {
         const mammoth = await import("mammoth");
-        const result = await mammoth.extractRawText({ buffer });
-        extractedText = result.value;
+        // Use convertToHtml to preserve table cell alignments (tabs) and paragraph breaks
+        const result = await mammoth.convertToHtml({ buffer });
+        extractedText = result.value
+          .replace(/<\/p>/gi, '\n\n')
+          .replace(/<\/tr>/gi, '\n')
+          .replace(/<\/td>/gi, '\t')
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<[^>]+>/g, '') // strip remaining tags
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&amp;/g, '&');
       } else if (ext === ".doc" || mimetype === "application/msword") {
-        // .doc (old Word format) — try mammoth, it handles some .doc files
         try {
           const mammoth = await import("mammoth");
-          const result = await mammoth.extractRawText({ buffer });
-          extractedText = result.value;
+          const result = await mammoth.convertToHtml({ buffer });
+          extractedText = result.value
+            .replace(/<\/p>/gi, '\n\n')
+            .replace(/<\/tr>/gi, '\n')
+            .replace(/<\/td>/gi, '\t')
+            .replace(/<br\s*\/?>/gi, '\n')
+            .replace(/<[^>]+>/g, '')
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&');
         } catch {
           extractedText = buffer.toString("utf-8");
         }
