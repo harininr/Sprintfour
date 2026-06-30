@@ -4,7 +4,7 @@ import { ShieldCheck, Lock, Zap, ArrowRight, CheckCircle2, ShieldAlert, FileText
 import { Button } from "@/components/ui/button";
 
 export default function Landing() {
-  const staggerContainer = {
+  const staggerContainer: any = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
@@ -12,7 +12,7 @@ export default function Landing() {
     }
   };
 
-  const item = {
+  const item: any = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };
@@ -84,7 +84,7 @@ export default function Landing() {
           <motion.div 
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.8, type: "spring" }}
+            transition={{ delay: 0.4, duration: 0.8, type: "spring" } as any}
             className="mt-24 relative max-w-5xl mx-auto"
           >
             <div className="absolute inset-0 bg-gradient-to-t from-[#FDFBF7] via-transparent to-transparent z-10 h-full w-full bottom-0" />
