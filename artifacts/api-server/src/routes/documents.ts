@@ -3,8 +3,6 @@ import { supabase } from "@workspace/db";
 import multer from "multer";
 import fs from "fs";
 import path from "path";
-// @ts-ignore
-import pdfParse from "pdf-parse/lib/pdf-parse.js";
 import { runConsensusDetection } from "../lib/detector";
 import {
   ListDocumentsResponse,
@@ -22,9 +20,13 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 },
   fileFilter(_req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();
-    const allowedExts = [".docx", ".doc", ".txt", ".md", ".text", ".pdf"];
+    // Explicitly reject PDFs
+    if (ext === ".pdf" || file.mimetype === "application/pdf") {
+      cb(new Error("PDF files are not supported. Please convert your PDF to a Word document (.docx) and upload again."));
+      return;
+    }
+    const allowedExts = [".docx", ".doc", ".txt", ".md", ".text"];
     const allowedMime = [
-      "application/pdf",
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "application/msword",
       "text/plain",
@@ -165,26 +167,6 @@ router.post("/documents", upload.single("file"), async (req, res): Promise<void>
         htmlContent = sanitiseHtml(htmlResult.value);
         // Derive plain text for AI offset tracking
         plainText = htmlToPlain(htmlContent);
-      } else if (ext === ".pdf" || file.mimetype === "application/pdf") {
-        const pdfData = await pdfParse(dataBuffer);
-        // Clean common PDF text extraction artifacts
-        plainText = pdfData.text
-          .replace(/\0/g, "")
-          .replace(/\r\n/g, "\n")
-          .replace(/\r/g, "\n")
-          .replace(/ {3,}/g, "  ")
-          .replace(/\uFB01/g, "fi")  // ﬁ ligature
-          .replace(/\uFB02/g, "fl")  // ﬂ ligature
-          .replace(/\uFB00/g, "ff")  // ﬀ ligature
-          .replace(/\uFB03/g, "ffi") // ﬃ ligature
-          .replace(/\uFB04/g, "ffl") // ﬄ ligature
-          .replace(/\n{4,}/g, "\n\n\n")
-          .trim();
-        // For PDFs, also set htmlContent so the viewer shows pre-formatted text
-        htmlContent =
-          `<div class="pdf-content"><pre style="white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.7;">` +
-          plainText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") +
-          `</pre></div>`;
       } else {
         plainText = dataBuffer.toString("utf-8").replace(/\0/g, "").replace(/\r\n/g, "\n").trim();
       }

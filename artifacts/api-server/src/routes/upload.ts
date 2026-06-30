@@ -1,8 +1,6 @@
 import { Router, type IRouter } from "express";
 import multer from "multer";
 import path from "path";
-// @ts-ignore
-import pdfParse from "pdf-parse/lib/pdf-parse.js";
 
 const router: IRouter = Router();
 
@@ -13,14 +11,18 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }, // 20 MB cap
   fileFilter(_req, file, cb) {
     const ext = path.extname(file.originalname).toLowerCase();
-    const allowedExts = [".docx", ".doc", ".txt", ".md", ".text", ".pdf"];
+    // PDF is intentionally NOT supported — reject with a helpful message
+    if (ext === ".pdf" || file.mimetype === "application/pdf") {
+      cb(new Error("PDF files are not supported. Please convert your PDF to a Word document (.docx) and upload again."));
+      return;
+    }
+    const allowedExts = [".docx", ".doc", ".txt", ".md", ".text"];
     const allowedMime = [
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       "application/msword",
       "text/plain",
       "text/markdown",
-      "application/pdf",
-      "application/octet-stream", // fallback for some uploads
+      "application/octet-stream",
     ];
     if (allowedMime.includes(file.mimetype) || allowedExts.includes(ext)) {
       cb(null, true);
@@ -111,27 +113,6 @@ router.post(
           plainText = buffer.toString("utf-8");
           htmlContent = plainText;
           contentType = "text";
-        }
-
-      // ── PDF ─────────────────────────────────────────────────────────────
-      } else if (ext === ".pdf" || mimetype === "application/pdf") {
-        try {
-          const pdfData = await pdfParse(buffer);
-          plainText = cleanPdfText(pdfData.text);
-          // Render PDF plain text as pre-formatted HTML so the viewer
-          // preserves line breaks and paragraph structure
-          htmlContent =
-            `<div class="pdf-content"><pre style="white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.7;">` +
-            plainText
-              .replace(/&/g, "&amp;")
-              .replace(/</g, "&lt;")
-              .replace(/>/g, "&gt;") +
-            `</pre></div>`;
-          contentType = "pdf";
-        } catch (e) {
-          const msg = e instanceof Error ? e.message : String(e);
-          res.status(422).json({ error: `Failed to parse PDF: ${msg}` });
-          return;
         }
 
       // ── Plain text / Markdown ───────────────────────────────────────────

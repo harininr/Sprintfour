@@ -30,9 +30,8 @@ import { RecentDocuments, ReviewQueue } from "../components/dashboard/dashboard-
 
 type Tab = "upload" | "text";
 
-const ACCEPTED = ".pdf,.docx,.doc,.txt,.md,.text";
+const ACCEPTED = ".docx,.doc,.txt,.md,.text";
 const ACCEPTED_MIMES = [
-  "application/pdf",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/msword",
   "text/plain",
@@ -407,8 +406,8 @@ export default function Dashboard() {
                     <div className="w-12 h-12 rounded-full bg-[#F5F1EA] flex items-center justify-center mb-3 text-[#6B1E2B]">
                       <Upload className="h-5 w-5" />
                     </div>
-                    <p className="text-sm font-medium text-[#1E1E1E]">Drop a file or click to browse</p>
-                    <p className="text-xs text-[#1E1E1E]/50 mt-1">PDF, DOCX, DOC, TXT, MD — up to 20 MB</p>
+                    <p className="text-sm font-medium text-[#1E1E1E]">Click to upload or drag and drop</p>
+                    <p className="text-xs text-[#1E1E1E]/50 mt-1">DOCX, DOC, TXT, MD — up to 20 MB</p>
                   </div>
                 )}
               </div>
