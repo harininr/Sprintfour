@@ -38,12 +38,20 @@ const frontendDist = path.resolve(process.cwd(), "../redact-review/dist/public")
 if (fs.existsSync(frontendDist)) {
   app.use(express.static(frontendDist));
   // SPA Fallback: send index.html for any unhandled routes
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(frontendDist, "index.html"));
+  app.use((req, res, next) => {
+    if (req.method === "GET" && !req.path.startsWith("/api")) {
+      res.sendFile(path.join(frontendDist, "index.html"));
+    } else {
+      next();
+    }
   });
 } else {
-  app.get("/", (req, res) => {
-    res.send("API Server is running. Frontend build not found at " + frontendDist);
+  app.use((req, res, next) => {
+    if (req.method === "GET" && !req.path.startsWith("/api")) {
+      res.send("API Server is running. Frontend build not found at " + frontendDist);
+    } else {
+      next();
+    }
   });
 }
 
