@@ -418,7 +418,7 @@ export default function Landing() {
 </div>
 </div>
 <div className="max-w-7xl mx-auto mt-20 pt-8 border-t border-[#e2bfb9] flex flex-col md:flex-row justify-between items-center gap-4">
-<p className="text-xs font-mono text-[10px] text-[#5e5f5d]">© 2024 CONSENSUS REDACT. ALL RIGHTS RESERVED.</p>
+<p className="text-xs font-mono text-[10px] text-[#5e5f5d]">© 2024 REDACT REVIEW. ALL RIGHTS RESERVED.</p>
 <div className="flex gap-8 text-xs font-mono text-[10px] text-[#5e5f5d]">
 <a className="hover:text-[#570000]" href="/">TERMS</a>
 <a className="hover:text-[#570000]" href="/">PRIVACY</a>
