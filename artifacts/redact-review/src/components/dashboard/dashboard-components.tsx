@@ -42,13 +42,6 @@ export const HeroSection = ({ onUploadClick, onAuditorClick }: { onUploadClick: 
         >
           <Upload className="h-4 w-4" /> Upload Document
         </Button>
-        <Button
-          onClick={onAuditorClick}
-          variant="outline"
-          className="border-[#E5DDD2] text-[#1E1E1E] hover:bg-[#F5F1EA] rounded-xl px-6 h-11 font-medium gap-2"
-        >
-          <ShieldAlert className="h-4 w-4 text-[#6B1E2B]" /> Privacy Auditor
-        </Button>
       </div>
     </div>
   </motion.div>

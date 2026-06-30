@@ -315,7 +315,7 @@ export default function ReviewWorkspace() {
       {/* ── Topbar ─────────────────────────────────────────────────────────────── */}
       <header className="h-14 shrink-0 bg-[#FFFDF9] border-b border-[#E8DED1] shadow-sm px-4 flex items-center justify-between z-30">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => setLocation("/")} className="text-[#666]">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/dashboard")} className="text-[#666]">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="h-5 w-px bg-[#E8DED1]" />
