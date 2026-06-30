@@ -8,10 +8,26 @@
 
 **Multi-model consensus detection · Rich document preservation · Secure PDF export**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-redactreview.onrender.com-6B1E2B?style=for-the-badge&logo=render)](https://redactreview.onrender.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
 [![Node.js](https://img.shields.io/badge/Node.js-22-339933?style=for-the-badge&logo=node.js)](https://nodejs.org/)
+
+</div>
+
+---
+
+## 🌐 Deployed App
+
+> [!NOTE]
+> **The app is live and ready to use — no setup required.**
+
+<div align="center">
+
+[![🚀 Open Live App](https://img.shields.io/badge/🚀%20Open%20Live%20App-redactreview.onrender.com-6B1E2B?style=for-the-badge&logo=render&logoColor=white)](https://redactreview.onrender.com)
+
+**[🔗 https://redactreview.onrender.com](https://redactreview.onrender.com)**
+
+*Use the evaluator credentials below or create a free account instantly*
 
 </div>
 
@@ -24,7 +40,7 @@
 
 <div align="center">
 
-[![▶ Watch Demo on YouTube](https://img.shields.io/badge/▶%20Watch%20Full%20Demo-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/QtRtr9pMx04)
+[![▶ Watch Full Demo](https://img.shields.io/badge/▶%20Watch%20Full%20Demo-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/QtRtr9pMx04)
 
 **[🔗 https://youtu.be/QtRtr9pMx04](https://youtu.be/QtRtr9pMx04)**
 
