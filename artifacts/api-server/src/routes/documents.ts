@@ -1,87 +1,164 @@
 import { Router, type IRouter } from "express";
-import { eq, count, and, sql } from "drizzle-orm";
-import { db, documentsTable, redactionsTable } from "@workspace/db";
+import { supabase } from "@workspace/db";
+import multer from "multer";
+import fs from "fs";
+import path from "path";
+// @ts-ignore
+import pdfParse from "pdf-parse/lib/pdf-parse.js";
+import { runConsensusDetection } from "../lib/detector";
 import {
-  GetDocumentParams,
-  DeleteDocumentParams,
-  GetDocumentSummaryParams,
-  CompleteReviewParams,
-  CreateDocumentBody,
-  CreateDocumentResponse,
-  GetDocumentResponse,
-  CompleteReviewResponse,
-  GetDocumentSummaryResponse,
+  ListDocumentsResponse,
   ListDocumentsResponseItem,
+  GetDocumentParams,
+  GetDocumentResponse,
+  DeleteDocumentParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
+// Configure multer for file uploads
+const upload = multer({ 
+  dest: path.join(process.cwd(), 'uploads/') 
+});
+
 router.get("/documents", async (req, res): Promise<void> => {
-  const docs = await db.select().from(documentsTable).orderBy(documentsTable.createdAt);
+  const { data: docs, error } = await supabase
+    .from("documents")
+    .select("*")
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    res.status(500).json({ error: error.message });
+    return;
+  }
 
   const result = await Promise.all(
-    docs.map(async (doc) => {
-      const stats = await db
-        .select({
-          status: redactionsTable.status,
-          cnt: count(),
-        })
-        .from(redactionsTable)
-        .where(eq(redactionsTable.documentId, doc.id))
-        .groupBy(redactionsTable.status);
+    (docs || []).map(async (doc) => {
+      const { data: stats } = await supabase
+        .from("redactions")
+        .select("status, id")
+        .eq("document_id", doc.id);
 
       const counts = { pending: 0, confirmed: 0, rejected: 0, user_added: 0 };
       let total = 0;
-      for (const s of stats) {
-        const c = Number(s.cnt);
-        counts[s.status as keyof typeof counts] = c;
-        total += c;
+      for (const s of (stats || [])) {
+        const statusKey = s.status as keyof typeof counts;
+        if (counts.hasOwnProperty(statusKey)) {
+          counts[statusKey]++;
+        }
+        total++;
       }
 
       return ListDocumentsResponseItem.parse({
         id: doc.id,
         title: doc.title,
         status: doc.status,
-        createdAt: doc.createdAt.toISOString(),
-        updatedAt: doc.updatedAt?.toISOString() ?? null,
+        createdAt: doc.created_at,
+        updatedAt: doc.updated_at ?? null,
         totalRedactions: total,
         pendingCount: counts.pending,
         confirmedCount: counts.confirmed,
         rejectedCount: counts.rejected,
         userAddedCount: counts.user_added,
       });
-    }),
+    })
   );
 
-  res.json(result);
+  res.json(ListDocumentsResponse.parse(result));
 });
 
-router.post("/documents", async (req, res): Promise<void> => {
-  const parsed = CreateDocumentBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
+router.post("/documents", upload.single("file"), async (req, res): Promise<void> => {
+  try {
+    let title = "";
+    let content = "";
+    let fileObj: any = null;
+
+    if (req.file) {
+      // It's a file upload
+      const file = req.file;
+      title = file.originalname;
+      const dataBuffer = fs.readFileSync(file.path);
+      
+      const ext = path.extname(title).toLowerCase();
+      console.log("Upload ext:", ext, "mimetype:", file.mimetype);
+      if (ext === ".docx" || file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document") {
+        const mammoth = await import("mammoth");
+        const result = await mammoth.extractRawText({ buffer: dataBuffer });
+        content = result.value;
+      } else {
+        const pdfData = await pdfParse(dataBuffer);
+        content = pdfData.text;
+      }
+      
+      fileObj = file;
+    } else if (req.body.title && req.body.content) {
+      // It's a JSON upload
+      title = req.body.title;
+      content = req.body.content;
+    } else {
+      res.status(400).json({ error: "Missing file or title/content in request" });
+      return;
+    }
+
+    const { data: doc, error: insertError } = await supabase
+      .from("documents")
+      .insert({
+        title,
+        content,
+        file_path: fileObj ? fileObj.path : null,
+      })
+      .select("*")
+      .single();
+
+    if (insertError || !doc) {
+      res.status(500).json({ error: insertError?.message || "Failed to insert document" });
+      return;
+    }
+
+    // Trigger background AI consensus detection
+    runConsensusDetection(doc.id, content).catch((err) => {
+      console.error("Background consensus detection failed:", err);
+    });
+
+    res.status(201).json({ id: doc.id });
+  } catch (err: any) {
+    console.error("Error processing document:", err);
+    res.status(500).json({ error: "Failed to process document." });
+  }
+});
+
+router.get("/documents/:id/file", async (req, res): Promise<void> => {
+  const params = GetDocumentParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const [doc] = await db
-    .insert(documentsTable)
-    .values({ title: parsed.data.title, content: parsed.data.content })
-    .returning();
+  const { data: doc, error } = await supabase
+    .from("documents")
+    .select("file_path")
+    .eq("id", params.data.id)
+    .single();
 
-  res.status(201).json(
-    CreateDocumentResponse.parse({
-      id: doc.id,
-      title: doc.title,
-      status: doc.status,
-      createdAt: doc.createdAt.toISOString(),
-      updatedAt: doc.updatedAt?.toISOString() ?? null,
-      totalRedactions: 0,
-      pendingCount: 0,
-      confirmedCount: 0,
-      rejectedCount: 0,
-      userAddedCount: 0,
-    }),
-  );
+  if (error || !doc) {
+    res.status(404).json({ error: "Document not found" });
+    return;
+  }
+
+  if (!doc.file_path) {
+    res.status(404).json({ error: "Document has no file associated" });
+    return;
+  }
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.sendFile(doc.file_path, (err) => {
+    if (err) {
+      console.error("Error serving file:", err);
+      if (!res.headersSent) {
+        res.status(500).end();
+      }
+    }
+  });
 });
 
 router.get("/documents/:id", async (req, res): Promise<void> => {
@@ -91,54 +168,47 @@ router.get("/documents/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [doc] = await db
-    .select()
-    .from(documentsTable)
-    .where(eq(documentsTable.id, params.data.id));
+  const { data: doc, error } = await supabase
+    .from("documents")
+    .select("*")
+    .eq("id", params.data.id)
+    .single();
 
-  if (!doc) {
+  if (error || !doc) {
     res.status(404).json({ error: "Document not found" });
     return;
   }
 
-  if (doc.status === "pending") {
-    await db
-      .update(documentsTable)
-      .set({ status: "in_review" })
-      .where(eq(documentsTable.id, doc.id));
-    doc.status = "in_review";
-  }
+  const { data: redactions } = await supabase
+    .from("redactions")
+    .select("*")
+    .eq("document_id", doc.id)
+    .order("start_offset", { ascending: true });
 
-  const redactions = await db
-    .select()
-    .from(redactionsTable)
-    .where(eq(redactionsTable.documentId, doc.id))
-    .orderBy(redactionsTable.startOffset);
+  const result = GetDocumentResponse.parse({
+    id: doc.id,
+    title: doc.title,
+    status: doc.status,
+    content: doc.content,
+    filePath: doc.file_path,
+    createdAt: doc.created_at,
+    updatedAt: doc.updated_at ?? null,
+    redactions: (redactions || []).map((r) => ({
+      id: r.id,
+      documentId: r.document_id,
+      startOffset: r.start_offset,
+      endOffset: r.end_offset,
+      boundingBoxes: r.bounding_boxes,
+      text: r.text,
+      category: r.category,
+      confidence: r.confidence,
+      status: r.status,
+      source: r.source,
+      note: r.note,
+    })),
+  });
 
-  res.json(
-    GetDocumentResponse.parse({
-      id: doc.id,
-      title: doc.title,
-      status: doc.status,
-      content: doc.content,
-      createdAt: doc.createdAt.toISOString(),
-      updatedAt: doc.updatedAt?.toISOString() ?? null,
-      redactions: redactions.map((r) => ({
-        id: r.id,
-        documentId: r.documentId,
-        startOffset: r.startOffset,
-        endOffset: r.endOffset,
-        text: r.text,
-        category: r.category,
-        confidence: r.confidence,
-        status: r.status,
-        source: r.source,
-        note: r.note ?? null,
-        createdAt: r.createdAt.toISOString(),
-        updatedAt: r.updatedAt?.toISOString() ?? null,
-      })),
-    }),
-  );
+  res.json(result);
 });
 
 router.delete("/documents/:id", async (req, res): Promise<void> => {
@@ -148,138 +218,39 @@ router.delete("/documents/:id", async (req, res): Promise<void> => {
     return;
   }
 
-  const [doc] = await db
-    .delete(documentsTable)
-    .where(eq(documentsTable.id, params.data.id))
-    .returning();
+  const { error } = await supabase
+    .from("documents")
+    .delete()
+    .eq("id", params.data.id);
 
-  if (!doc) {
-    res.status(404).json({ error: "Document not found" });
+  if (error) {
+    res.status(500).json({ error: error.message });
     return;
   }
 
-  res.sendStatus(204);
-});
-
-router.get("/documents/:id/summary", async (req, res): Promise<void> => {
-  const params = GetDocumentSummaryParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-
-  const [doc] = await db
-    .select()
-    .from(documentsTable)
-    .where(eq(documentsTable.id, params.data.id));
-
-  if (!doc) {
-    res.status(404).json({ error: "Document not found" });
-    return;
-  }
-
-  const stats = await db
-    .select({
-      status: redactionsTable.status,
-      cnt: count(),
-    })
-    .from(redactionsTable)
-    .where(eq(redactionsTable.documentId, params.data.id))
-    .groupBy(redactionsTable.status);
-
-  const catStats = await db
-    .select({
-      category: redactionsTable.category,
-      cnt: count(),
-    })
-    .from(redactionsTable)
-    .where(
-      and(
-        eq(redactionsTable.documentId, params.data.id),
-        sql`${redactionsTable.status} != 'rejected'`,
-      ),
-    )
-    .groupBy(redactionsTable.category);
-
-  const counts = { pending: 0, confirmed: 0, rejected: 0, user_added: 0 };
-  let total = 0;
-  for (const s of stats) {
-    const c = Number(s.cnt);
-    counts[s.status as keyof typeof counts] = c;
-    total += c;
-  }
-
-  const reviewed = counts.confirmed + counts.rejected + counts.user_added;
-  const completionPercent = total === 0 ? 100 : Math.round((reviewed / total) * 100);
-  const riskScore = Math.min(
-    100,
-    counts.pending * 5 + counts.user_added * 15 + counts.confirmed * 2,
-  );
-
-  res.json(
-    GetDocumentSummaryResponse.parse({
-      documentId: params.data.id,
-      totalRedactions: total,
-      confirmedCount: counts.confirmed,
-      rejectedCount: counts.rejected,
-      userAddedCount: counts.user_added,
-      pendingCount: counts.pending,
-      riskScore,
-      completionPercent,
-      categoryBreakdown: catStats.map((s) => ({
-        category: s.category,
-        count: Number(s.cnt),
-      })),
-    }),
-  );
+  res.status(204).end();
 });
 
 router.post("/documents/:id/complete", async (req, res): Promise<void> => {
-  const params = CompleteReviewParams.safeParse(req.params);
+  const params = GetDocumentParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const [doc] = await db
-    .update(documentsTable)
-    .set({ status: "completed" })
-    .where(eq(documentsTable.id, params.data.id))
-    .returning();
+  const { data: doc, error } = await supabase
+    .from("documents")
+    .update({ status: "completed" })
+    .eq("id", params.data.id)
+    .select("*")
+    .single();
 
-  if (!doc) {
-    res.status(404).json({ error: "Document not found" });
+  if (error || !doc) {
+    res.status(500).json({ error: error?.message || "Failed to complete document" });
     return;
   }
 
-  const stats = await db
-    .select({ status: redactionsTable.status, cnt: count() })
-    .from(redactionsTable)
-    .where(eq(redactionsTable.documentId, doc.id))
-    .groupBy(redactionsTable.status);
-
-  const counts = { pending: 0, confirmed: 0, rejected: 0, user_added: 0 };
-  let total = 0;
-  for (const s of stats) {
-    const c = Number(s.cnt);
-    counts[s.status as keyof typeof counts] = c;
-    total += c;
-  }
-
-  res.json(
-    CompleteReviewResponse.parse({
-      id: doc.id,
-      title: doc.title,
-      status: doc.status,
-      createdAt: doc.createdAt.toISOString(),
-      updatedAt: doc.updatedAt?.toISOString() ?? null,
-      totalRedactions: total,
-      pendingCount: counts.pending,
-      confirmedCount: counts.confirmed,
-      rejectedCount: counts.rejected,
-      userAddedCount: counts.user_added,
-    }),
-  );
+  res.json(doc);
 });
 
 export default router;

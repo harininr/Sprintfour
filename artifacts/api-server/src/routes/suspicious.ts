@@ -1,6 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, sql } from "drizzle-orm";
-import { db, documentsTable, redactionsTable } from "@workspace/db";
+import { supabase } from "@workspace/db";
 import { GetSuspiciousTextParams, GetSuspiciousTextResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -152,29 +151,26 @@ router.get("/documents/:id/suspicious", async (req, res): Promise<void> => {
     return;
   }
 
-  const [doc] = await db
-    .select()
-    .from(documentsTable)
-    .where(eq(documentsTable.id, params.data.id));
+  const { data: doc, error } = await supabase
+    .from("documents")
+    .select("content")
+    .eq("id", params.data.id)
+    .single();
 
-  if (!doc) {
+  if (error || !doc) {
     res.status(404).json({ error: "Document not found" });
     return;
   }
 
-  const activeRedactions = await db
-    .select({
-      startOffset: redactionsTable.startOffset,
-      endOffset: redactionsTable.endOffset,
-    })
-    .from(redactionsTable)
-    .where(
-      sql`${redactionsTable.documentId} = ${params.data.id} AND ${redactionsTable.status} != 'rejected'`,
-    );
+  const { data: activeRedactions } = await supabase
+    .from("redactions")
+    .select("start_offset, end_offset, status")
+    .eq("document_id", params.data.id)
+    .neq("status", "rejected");
 
-  const redactedRanges = activeRedactions.map((r) => ({
-    start: r.startOffset,
-    end: r.endOffset,
+  const redactedRanges = (activeRedactions || []).map((r) => ({
+    start: r.start_offset,
+    end: r.end_offset,
   }));
 
   const suspicious = findSuspiciousSpans(doc.content, redactedRanges);
