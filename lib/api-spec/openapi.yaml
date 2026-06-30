@@ -13,6 +13,8 @@ tags:
     description: Document operations
   - name: redactions
     description: Redaction operations
+  - name: intelligence
+    description: Privacy intelligence analytics
 paths:
   /healthz:
     get:
@@ -244,6 +246,27 @@ paths:
                 items:
                   $ref: "#/components/schemas/SuspiciousSpan"
 
+  /documents/{id}/intelligence:
+    get:
+      operationId: getIntelligenceReport
+      tags: [intelligence]
+      summary: Get comprehensive privacy intelligence analytics for a document
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Intelligence report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntelligenceReport"
+        "404":
+          description: Not found
+
 components:
   schemas:
     HealthStatus:
@@ -293,6 +316,8 @@ components:
           enum: [pending, in_review, completed]
         content:
           type: string
+        filePath:
+          type: ["string", "null"]
         redactions:
           type: array
           items:
@@ -325,6 +350,8 @@ components:
           type: integer
         text:
           type: string
+        boundingBoxes:
+          type: ["string", "null"]
         category:
           type: string
           enum: [name, phone, email, address, ssn, dob, financial, medical, organization, other]
@@ -353,6 +380,8 @@ components:
           type: integer
         text:
           type: string
+        boundingBoxes:
+          type: ["string", "null"]
         category:
           type: string
           enum: [name, phone, email, address, ssn, dob, financial, medical, organization, other]
@@ -420,3 +449,133 @@ components:
         riskLevel:
           type: string
           enum: [low, medium, high]
+
+    IntelligenceReport:
+      type: object
+      required: [documentId, privacyScore, riskLevel, exportReady, stats, categoryBreakdown, complianceChecklist, remainingRisk, whatChanged, verdict]
+      properties:
+        documentId:
+          type: string
+        privacyScore:
+          type: integer
+        riskLevel:
+          type: string
+          enum: [critical, high, medium, low, safe]
+        exportReady:
+          type: boolean
+        stats:
+          $ref: "#/components/schemas/IntelligenceStats"
+        categoryBreakdown:
+          type: array
+          items:
+            $ref: "#/components/schemas/IntelligenceCategoryItem"
+        complianceChecklist:
+          type: array
+          items:
+            $ref: "#/components/schemas/IntelligenceChecklistItem"
+        remainingRisk:
+          type: array
+          items:
+            $ref: "#/components/schemas/IntelligenceRiskItem"
+        whatChanged:
+          $ref: "#/components/schemas/IntelligenceWhatChanged"
+        verdict:
+          $ref: "#/components/schemas/IntelligenceVerdict"
+
+    IntelligenceStats:
+      type: object
+      required: [total, confirmed, rejected, pending, userAdded, aiDetected]
+      properties:
+        total:
+          type: integer
+        confirmed:
+          type: integer
+        rejected:
+          type: integer
+        pending:
+          type: integer
+        userAdded:
+          type: integer
+        aiDetected:
+          type: integer
+
+    IntelligenceCategoryItem:
+      type: object
+      required: [category, severity, detected, confirmed, rejected, pending, coverage]
+      properties:
+        category:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        detected:
+          type: integer
+        confirmed:
+          type: integer
+        rejected:
+          type: integer
+        pending:
+          type: integer
+        coverage:
+          type: number
+
+    IntelligenceChecklistItem:
+      type: object
+      required: [label, passed, category, remainingCount]
+      properties:
+        label:
+          type: string
+        passed:
+          type: boolean
+        category:
+          type: string
+        remainingCount:
+          type: integer
+        severity:
+          type: string
+
+    IntelligenceRiskItem:
+      type: object
+      required: [id, text, category, severity, confidence, startOffset]
+      properties:
+        id:
+          type: string
+        text:
+          type: string
+        category:
+          type: string
+        severity:
+          type: string
+          enum: [critical, high, medium, low]
+        confidence:
+          type: number
+        startOffset:
+          type: integer
+
+    IntelligenceWhatChanged:
+      type: object
+      required: [originalAiDetections, userCorrections, falsePositivesRemoved, missedEntitiesAdded, finalCount]
+      properties:
+        originalAiDetections:
+          type: integer
+        userCorrections:
+          type: integer
+        falsePositivesRemoved:
+          type: integer
+        missedEntitiesAdded:
+          type: integer
+        finalCount:
+          type: integer
+
+    IntelligenceVerdict:
+      type: object
+      required: [label, score, riskLevel, recommendation]
+      properties:
+        label:
+          type: string
+        score:
+          type: integer
+        riskLevel:
+          type: string
+        recommendation:
+          type: string

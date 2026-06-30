@@ -15,6 +15,8 @@ export interface Redaction {
   startOffset: number;
   endOffset: number;
   text: string;
+  /** @nullable */
+  boundingBoxes?: string | null;
   category: RedactionCategory;
   confidence: number;
   status: RedactionStatus;

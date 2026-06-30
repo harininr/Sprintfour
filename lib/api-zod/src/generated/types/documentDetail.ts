@@ -13,6 +13,8 @@ export interface DocumentDetail {
   title: string;
   status: DocumentDetailStatus;
   content: string;
+  /** @nullable */
+  filePath?: string | null;
   redactions: Redaction[];
   createdAt: string;
   /** @nullable */

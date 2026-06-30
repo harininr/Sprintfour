@@ -11,6 +11,8 @@ export interface RedactionInput {
   startOffset: number;
   endOffset: number;
   text: string;
+  /** @nullable */
+  boundingBoxes?: string | null;
   category: RedactionInputCategory;
   note?: string;
 }

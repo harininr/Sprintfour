@@ -24,6 +24,7 @@ import type {
   DocumentDetail,
   DocumentInput,
   HealthStatus,
+  IntelligenceReport,
   Redaction,
   RedactionInput,
   RedactionUpdate,
@@ -934,6 +935,83 @@ export function useGetSuspiciousText<TData = Awaited<ReturnType<typeof getSuspic
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetSuspiciousTextQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetIntelligenceReportUrl = (id: string,) => {
+
+
+
+
+  return `/api/documents/${id}/intelligence`
+}
+
+/**
+ * @summary Get comprehensive privacy intelligence analytics for a document
+ */
+export const getIntelligenceReport = async (id: string, options?: RequestInit): Promise<IntelligenceReport> => {
+
+  return customFetch<IntelligenceReport>(getGetIntelligenceReportUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetIntelligenceReportQueryKey = (id: string,) => {
+    return [
+    `/api/documents/${id}/intelligence`
+    ] as const;
+    }
+
+
+export const getGetIntelligenceReportQueryOptions = <TData = Awaited<ReturnType<typeof getIntelligenceReport>>, TError = ErrorType<void>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetIntelligenceReportQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getIntelligenceReport>>> = ({ signal }) => getIntelligenceReport(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceReport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetIntelligenceReportQueryResult = NonNullable<Awaited<ReturnType<typeof getIntelligenceReport>>>
+export type GetIntelligenceReportQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get comprehensive privacy intelligence analytics for a document
+ */
+
+export function useGetIntelligenceReport<TData = Awaited<ReturnType<typeof getIntelligenceReport>>, TError = ErrorType<void>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getIntelligenceReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetIntelligenceReportQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

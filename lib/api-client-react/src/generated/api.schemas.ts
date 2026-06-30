@@ -81,6 +81,8 @@ export interface Redaction {
   startOffset: number;
   endOffset: number;
   text: string;
+  /** @nullable */
+  boundingBoxes?: string | null;
   category: RedactionCategory;
   confidence: number;
   status: RedactionStatus;
@@ -97,6 +99,8 @@ export interface DocumentDetail {
   title: string;
   status: DocumentDetailStatus;
   content: string;
+  /** @nullable */
+  filePath?: string | null;
   redactions: Redaction[];
   createdAt: string;
   /** @nullable */
@@ -128,6 +132,8 @@ export interface RedactionInput {
   startOffset: number;
   endOffset: number;
   text: string;
+  /** @nullable */
+  boundingBoxes?: string | null;
   category: RedactionInputCategory;
   note?: string;
 }
@@ -196,5 +202,100 @@ export interface SuspiciousSpan {
   text: string;
   reason: string;
   riskLevel: SuspiciousSpanRiskLevel;
+}
+
+export type IntelligenceReportRiskLevel = typeof IntelligenceReportRiskLevel[keyof typeof IntelligenceReportRiskLevel];
+
+
+export const IntelligenceReportRiskLevel = {
+  critical: 'critical',
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+  safe: 'safe',
+} as const;
+
+export interface IntelligenceStats {
+  total: number;
+  confirmed: number;
+  rejected: number;
+  pending: number;
+  userAdded: number;
+  aiDetected: number;
+}
+
+export type IntelligenceCategoryItemSeverity = typeof IntelligenceCategoryItemSeverity[keyof typeof IntelligenceCategoryItemSeverity];
+
+
+export const IntelligenceCategoryItemSeverity = {
+  critical: 'critical',
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+} as const;
+
+export interface IntelligenceCategoryItem {
+  category: string;
+  severity: IntelligenceCategoryItemSeverity;
+  detected: number;
+  confirmed: number;
+  rejected: number;
+  pending: number;
+  coverage: number;
+}
+
+export interface IntelligenceChecklistItem {
+  label: string;
+  passed: boolean;
+  category: string;
+  remainingCount: number;
+  severity?: string;
+}
+
+export type IntelligenceRiskItemSeverity = typeof IntelligenceRiskItemSeverity[keyof typeof IntelligenceRiskItemSeverity];
+
+
+export const IntelligenceRiskItemSeverity = {
+  critical: 'critical',
+  high: 'high',
+  medium: 'medium',
+  low: 'low',
+} as const;
+
+export interface IntelligenceRiskItem {
+  id: string;
+  text: string;
+  category: string;
+  severity: IntelligenceRiskItemSeverity;
+  confidence: number;
+  startOffset: number;
+}
+
+export interface IntelligenceWhatChanged {
+  originalAiDetections: number;
+  userCorrections: number;
+  falsePositivesRemoved: number;
+  missedEntitiesAdded: number;
+  finalCount: number;
+}
+
+export interface IntelligenceVerdict {
+  label: string;
+  score: number;
+  riskLevel: string;
+  recommendation: string;
+}
+
+export interface IntelligenceReport {
+  documentId: string;
+  privacyScore: number;
+  riskLevel: IntelligenceReportRiskLevel;
+  exportReady: boolean;
+  stats: IntelligenceStats;
+  categoryBreakdown: IntelligenceCategoryItem[];
+  complianceChecklist: IntelligenceChecklistItem[];
+  remainingRisk: IntelligenceRiskItem[];
+  whatChanged: IntelligenceWhatChanged;
+  verdict: IntelligenceVerdict;
 }
 

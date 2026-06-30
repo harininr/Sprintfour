@@ -68,12 +68,14 @@ export const GetDocumentResponse = zod.object({
   "title": zod.string(),
   "status": zod.enum(['pending', 'in_review', 'completed']),
   "content": zod.string(),
+  "filePath": zod.string().nullish(),
   "redactions": zod.array(zod.object({
   "id": zod.string(),
   "documentId": zod.string(),
   "startOffset": zod.number(),
   "endOffset": zod.number(),
   "text": zod.string(),
+  "boundingBoxes": zod.string().nullish(),
   "category": zod.enum(['name', 'phone', 'email', 'address', 'ssn', 'dob', 'financial', 'medical', 'organization', 'other']),
   "confidence": zod.number(),
   "status": zod.enum(['pending', 'confirmed', 'rejected', 'user_added']),
@@ -154,6 +156,7 @@ export const ListRedactionsResponseItem = zod.object({
   "startOffset": zod.number(),
   "endOffset": zod.number(),
   "text": zod.string(),
+  "boundingBoxes": zod.string().nullish(),
   "category": zod.enum(['name', 'phone', 'email', 'address', 'ssn', 'dob', 'financial', 'medical', 'organization', 'other']),
   "confidence": zod.number(),
   "status": zod.enum(['pending', 'confirmed', 'rejected', 'user_added']),
@@ -176,6 +179,7 @@ export const CreateRedactionBody = zod.object({
   "startOffset": zod.number(),
   "endOffset": zod.number(),
   "text": zod.string(),
+  "boundingBoxes": zod.string().nullish(),
   "category": zod.enum(['name', 'phone', 'email', 'address', 'ssn', 'dob', 'financial', 'medical', 'organization', 'other']),
   "note": zod.string().optional()
 })
@@ -186,6 +190,7 @@ export const CreateRedactionResponse = zod.object({
   "startOffset": zod.number(),
   "endOffset": zod.number(),
   "text": zod.string(),
+  "boundingBoxes": zod.string().nullish(),
   "category": zod.enum(['name', 'phone', 'email', 'address', 'ssn', 'dob', 'financial', 'medical', 'organization', 'other']),
   "confidence": zod.number(),
   "status": zod.enum(['pending', 'confirmed', 'rejected', 'user_added']),
@@ -216,6 +221,7 @@ export const UpdateRedactionResponse = zod.object({
   "startOffset": zod.number(),
   "endOffset": zod.number(),
   "text": zod.string(),
+  "boundingBoxes": zod.string().nullish(),
   "category": zod.enum(['name', 'phone', 'email', 'address', 'ssn', 'dob', 'financial', 'medical', 'organization', 'other']),
   "confidence": zod.number(),
   "status": zod.enum(['pending', 'confirmed', 'rejected', 'user_added']),
@@ -252,5 +258,65 @@ export const GetSuspiciousTextResponseItem = zod.object({
   "riskLevel": zod.enum(['low', 'medium', 'high'])
 })
 export const GetSuspiciousTextResponse = zod.array(GetSuspiciousTextResponseItem)
+
+
+/**
+ * @summary Get comprehensive privacy intelligence analytics for a document
+ */
+export const GetIntelligenceReportParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetIntelligenceReportResponse = zod.object({
+  "documentId": zod.string(),
+  "privacyScore": zod.number(),
+  "riskLevel": zod.enum(['critical', 'high', 'medium', 'low', 'safe']),
+  "exportReady": zod.boolean(),
+  "stats": zod.object({
+  "total": zod.number(),
+  "confirmed": zod.number(),
+  "rejected": zod.number(),
+  "pending": zod.number(),
+  "userAdded": zod.number(),
+  "aiDetected": zod.number()
+}),
+  "categoryBreakdown": zod.array(zod.object({
+  "category": zod.string(),
+  "severity": zod.enum(['critical', 'high', 'medium', 'low']),
+  "detected": zod.number(),
+  "confirmed": zod.number(),
+  "rejected": zod.number(),
+  "pending": zod.number(),
+  "coverage": zod.number()
+})),
+  "complianceChecklist": zod.array(zod.object({
+  "label": zod.string(),
+  "passed": zod.boolean(),
+  "category": zod.string(),
+  "remainingCount": zod.number(),
+  "severity": zod.string().optional()
+})),
+  "remainingRisk": zod.array(zod.object({
+  "id": zod.string(),
+  "text": zod.string(),
+  "category": zod.string(),
+  "severity": zod.enum(['critical', 'high', 'medium', 'low']),
+  "confidence": zod.number(),
+  "startOffset": zod.number()
+})),
+  "whatChanged": zod.object({
+  "originalAiDetections": zod.number(),
+  "userCorrections": zod.number(),
+  "falsePositivesRemoved": zod.number(),
+  "missedEntitiesAdded": zod.number(),
+  "finalCount": zod.number()
+}),
+  "verdict": zod.object({
+  "label": zod.string(),
+  "score": zod.number(),
+  "riskLevel": zod.string(),
+  "recommendation": zod.string()
+})
+})
 
 
