@@ -17,6 +17,23 @@
 
 ---
 
+## 🎬 Demo Video
+
+> [!IMPORTANT]
+> **Watch the full demo before evaluating — it covers the complete redaction workflow end-to-end.**
+
+<div align="center">
+
+[![▶ Watch Demo on YouTube](https://img.shields.io/badge/▶%20Watch%20Full%20Demo-YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/QtRtr9pMx04)
+
+**[🔗 https://youtu.be/QtRtr9pMx04](https://youtu.be/QtRtr9pMx04)**
+
+*Upload → AI Consensus Scan → Human Review → Safe PDF Export — all in under 3 minutes*
+
+</div>
+
+---
+
 ## ✨ What is Redact Review?
 
 **Redact Review** is an enterprise-grade document redaction platform that uses **three AI models simultaneously** to detect Personally Identifiable Information (PII). Unlike single-model approaches, Redact Review applies a **consensus algorithm**—an entity is flagged with high confidence only when multiple models agree, dramatically reducing false positives and catching more PII that a single model might miss.
