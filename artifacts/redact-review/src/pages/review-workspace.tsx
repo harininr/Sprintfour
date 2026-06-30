@@ -20,7 +20,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import {
   ArrowLeft, MousePointerSquareDashed, X, ShieldAlert, Undo2,
   AlertTriangle, Keyboard, LayoutPanelLeft, SplitSquareHorizontal,
-  FileText, Check, Eye, Info,
+  FileText, Check, Eye, Info, Download
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -488,92 +488,119 @@ export default function ReviewWorkspace() {
                 )}
 
                 {/* Document Content */}
-                {docViewMode === "original" ? (
-                  <div
-                    className="font-serif text-[17px] leading-[1.9] text-[#1F1F1F]/90 whitespace-pre-wrap"
-                  >
-                    {chunks.map(chunk => {
-                      if (chunk.isNormal) return <span key={chunk.id}>{chunk.text}</span>;
+                <div className="font-serif text-[17px] leading-[1.9] text-[#1F1F1F]/90 whitespace-pre-wrap">
+                  {chunks.map(chunk => {
+                    if (chunk.isNormal) return <span key={chunk.id}>{chunk.text}</span>;
 
-                      if (chunk.redaction) {
-                        const r = chunk.redaction;
-                        const isSelected = selectedId === r.id;
-                        const consensus = parseConsensus(r.note);
-                        const isSecond = isSecondOpinion(consensus);
-                        const sev = getSeverity(r.category);
-                        const similarCount = getSimilarCount(r);
+                    const r = chunk.redaction;
+                    if (!r) return null;
 
-                        let cls = "";
-                        if (isSecond && r.status === "pending") {
-                          cls = "bg-orange-100 border-b-2 border-orange-500 text-orange-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-orange-200";
-                        } else if (sev === "critical") {
-                          cls = "bg-red-100 border-b-2 border-red-600 text-red-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-red-200";
-                        } else if (sev === "high") {
-                          cls = "bg-orange-50 border-b-2 border-orange-400 text-orange-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-orange-100";
-                        } else {
-                          cls = "bg-amber-50 border-b-2 border-amber-400 text-amber-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-amber-100";
-                        }
+                    if (docViewMode === "original") {
+                      const isSelected = selectedId === r.id;
+                      const consensus = parseConsensus(r.note);
+                      const isSecond = isSecondOpinion(consensus);
+                      const sev = getSeverity(r.category);
+                      const similarCount = getSimilarCount(r);
 
-                        if (r.status === "user_added") {
-                          cls = "bg-indigo-100 border-b-2 border-indigo-500 text-indigo-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-indigo-200";
-                        }
-
-                        if (r.status === "confirmed" || r.status === "user_added") {
-                          cls += " line-through opacity-70";
-                        } else if (r.status === "rejected") {
-                          cls += " opacity-50";
-                        }
-
-                        if (isSelected) cls += " ring-2 ring-[#6B1E2B] ring-offset-1 z-10 relative";
-
-                        return (
-                          <Tooltip key={chunk.id} delayDuration={200}>
-                            <TooltipTrigger asChild>
-                              <span
-                                id={`doc-redaction-${r.id}`}
-                                className={cls}
-                                onClick={() => setSelectedId(r.id)}
-                              >
-                                {chunk.text}
-                                {r.status === "confirmed" && (
-                                  <sup className="text-[9px] ml-0.5 text-white font-bold bg-[#4C7A53] rounded px-1 py-0.5">R</sup>
-                                )}
-                                {r.status === "rejected" && (
-                                  <sup className="text-[9px] ml-0.5 text-white font-bold bg-gray-500 rounded px-1 py-0.5">I</sup>
-                                )}
-                                {r.status === "user_added" && (
-                                  <sup className="text-[9px] ml-0.5 text-white font-bold bg-[#6B1E2B] rounded px-1 py-0.5">R</sup>
-                                )}
-                                {similarCount > 0 && r.status === "pending" && (
-                                  <sup className="text-[8px] ml-0.5 text-[#6B1E2B] font-bold bg-white/80 rounded px-0.5 shadow-sm">+{similarCount}</sup>
-                                )}
-                              </span>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" className="text-xs font-sans bg-[#1F1F1F] text-white border-none max-w-48">
-                              <div className="font-semibold capitalize">{r.category}</div>
-                              <div className="text-white/70 mt-0.5 capitalize">{getSeverity(r.category)} severity</div>
-                              {consensus && <div className="text-white/70">{consensus.count}/3 models agree</div>}
-                              {isSecond && <div className="text-orange-300 font-medium mt-0.5">Second Opinion — 1 model only</div>}
-                              {similarCount > 0 && <div className="text-white/60 mt-0.5">Appears {similarCount} more time{similarCount > 1 ? "s" : ""}</div>}
-                            </TooltipContent>
-                          </Tooltip>
-                        );
+                      let cls = "";
+                      if (isSecond && r.status === "pending") {
+                        cls = "bg-orange-100 border-b-2 border-orange-500 text-orange-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-orange-200";
+                      } else if (sev === "critical") {
+                        cls = "bg-red-100 border-b-2 border-red-600 text-red-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-red-200";
+                      } else if (sev === "high") {
+                        cls = "bg-orange-50 border-b-2 border-orange-400 text-orange-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-orange-100";
+                      } else {
+                        cls = "bg-amber-50 border-b-2 border-amber-400 text-amber-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-amber-100";
                       }
 
-                      return null;
-                    })}
-                  </div>
-                ) : (
-                  <div className="font-serif text-[17px] leading-[1.9] text-[#1F1F1F]/90 whitespace-pre-wrap">
-                    {docViewMode === "export"
-                      ? <FinalSafetyScanModal content={document.content} redactions={redactions} onExport={() => { 
+                      if (r.status === "user_added") {
+                        cls = "bg-indigo-100 border-b-2 border-indigo-500 text-indigo-900 px-0.5 rounded-sm cursor-pointer transition-all hover:bg-indigo-200";
+                      }
+
+                      if (r.status === "confirmed" || r.status === "user_added") {
+                        cls += " line-through opacity-70";
+                      } else if (r.status === "rejected") {
+                        cls += " opacity-50";
+                      }
+
+                      if (isSelected) cls += " ring-2 ring-[#6B1E2B] ring-offset-1 z-10 relative";
+
+                      return (
+                        <Tooltip key={chunk.id} delayDuration={200}>
+                          <TooltipTrigger asChild>
+                            <span
+                              id={`doc-redaction-${r.id}`}
+                              className={cls}
+                              onClick={() => setSelectedId(r.id)}
+                            >
+                              {chunk.text}
+                              {r.status === "confirmed" && (
+                                <sup className="text-[9px] ml-0.5 text-white font-bold bg-[#4C7A53] rounded px-1 py-0.5">R</sup>
+                              )}
+                              {r.status === "rejected" && (
+                                <sup className="text-[9px] ml-0.5 text-white font-bold bg-gray-500 rounded px-1 py-0.5">I</sup>
+                              )}
+                              {r.status === "user_added" && (
+                                <sup className="text-[9px] ml-0.5 text-white font-bold bg-[#6B1E2B] rounded px-1 py-0.5">R</sup>
+                              )}
+                              {similarCount > 0 && r.status === "pending" && (
+                                <sup className="text-[8px] ml-0.5 text-[#6B1E2B] font-bold bg-white/80 rounded px-0.5 shadow-sm">+{similarCount}</sup>
+                              )}
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs font-sans bg-[#1F1F1F] text-white border-none max-w-48">
+                            <div className="font-semibold capitalize">{r.category}</div>
+                            <div className="text-white/70 mt-0.5 capitalize">{getSeverity(r.category)} severity</div>
+                            {consensus && <div className="text-white/70">{consensus.count}/3 models agree</div>}
+                            {isSecond && <div className="text-orange-300 font-medium mt-0.5">Second Opinion — 1 model only</div>}
+                            {similarCount > 0 && <div className="text-white/60 mt-0.5">Appears {similarCount} more time{similarCount > 1 ? "s" : ""}</div>}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    }
+
+                    // For Reviewed and Export mode
+                    const isConfirmed = r.status === "confirmed" || r.status === "user_added";
+
+                    if (!isConfirmed) {
+                      return <span key={chunk.id}>{chunk.text}</span>;
+                    }
+
+                    if (docViewMode === "reviewed") {
+                      return (
+                        <span key={chunk.id} className="bg-black text-transparent select-none rounded-sm px-1 mx-0.5" aria-hidden="true" style={{ backgroundImage: "repeating-linear-gradient(45deg, #000, #000 5px, #222 5px, #222 10px)" }}>
+                          {chunk.text}
+                        </span>
+                      );
+                    }
+
+                    if (docViewMode === "export") {
+                      return <span key={chunk.id}>{"█".repeat(chunk.text.length)}</span>;
+                    }
+
+                    return null;
+                  })}
+
+                  {docViewMode === "export" && (
+                    <div className="mt-12 p-8 bg-[#FFFDF9] rounded-2xl border border-[#E8DED1] shadow-sm flex flex-col items-center justify-center text-center">
+                      <div className="w-16 h-16 bg-[#F5F1EA] rounded-full flex items-center justify-center mb-4">
+                        <ShieldAlert className="h-8 w-8 text-[#6B1E2B]" />
+                      </div>
+                      <h3 className="font-serif text-xl font-bold text-[#1F1F1F] mb-3">Ready for Final Export</h3>
+                      <p className="text-[#666] text-[15px] mb-8 max-w-[500px]">
+                        The document has been fully reviewed. Click below to generate the final redacted PDF with all PII permanently and irreversibly removed.
+                      </p>
+                      <Button onClick={() => {
                           window.open(`/api/documents/${id}/export-redacted`, "_blank");
                           toast.success("Document exported successfully"); 
                           setLocation("/dashboard"); 
-                        }} />
-                      : document.content}
-                  </div>
-                )}
+                       }} className="bg-[#6B1E2B] text-white hover:bg-[#7D2334] h-12 px-8 text-base shadow-lg transition-transform hover:scale-105">
+                         <Download className="h-5 w-5 mr-2" />
+                         Generate Secure PDF
+                       </Button>
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </div>
