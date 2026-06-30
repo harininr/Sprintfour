@@ -47,3 +47,17 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+.env
+api.log
+web.log
+artifacts/api-server/uploads/
+artifacts/api-server/test-out.pdf
+artifacts/api-server/check-redactions.cjs
+artifacts/api-server/test-pdf.cjs
+artifacts/api-server/test-redactions.cjs
+test-export.ts
+test-pg.js
+test-wouter.mjs
+test.js
+query.js
+start.sh

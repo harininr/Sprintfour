@@ -1,33 +1,39 @@
 import { useState } from "react";
 import { useLocation, Link } from "wouter";
-import { motion } from "framer-motion";
-import { ShieldCheck, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Mail, Lock, ArrowRight, Loader2, Eye, EyeOff, Shield, CheckCircle, Zap } from "lucide-react";
 import { useAuth } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+
+const TRUST_BADGES = [
+  { icon: Shield, label: "SOC 2 Compliant" },
+  { icon: CheckCircle, label: "GDPR Ready" },
+  { icon: CheckCircle, label: "HIPAA Aligned" },
+];
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error("Please fill in all fields");
-      return;
-    }
-
+    if (!email || !password) { toast.error("Please fill in all fields"); return; }
     setIsLoading(true);
     setTimeout(() => {
-      login({ id: "usr_mock_123", name: email.split("@")[0], email: email });
+      setLoginSuccess(true);
+      setTimeout(() => {
+        login({ id: "usr_mock_123", name: email.split("@")[0], email });
+        toast.success("Welcome back!");
+        setLocation("/dashboard");
+      }, 600);
       setIsLoading(false);
-      toast.success("Welcome back!");
-      setLocation("/dashboard");
     }, 1200);
   };
 
@@ -36,152 +42,302 @@ export default function Login() {
     setEmail("harinin006@gmail.com");
     setPassword("Harini@0504");
     setTimeout(() => {
-      login({ id: "usr_mock_123", name: "Evaluator", email: "harinin006@gmail.com" });
+      setLoginSuccess(true);
+      setTimeout(() => {
+        login({ id: "usr_mock_123", name: "Evaluator", email: "harinin006@gmail.com" });
+        toast.success("Welcome, Evaluator!");
+        setLocation("/dashboard");
+      }, 600);
       setIsAutoLoggingIn(false);
-      toast.success("Welcome back, Evaluator!");
-      setLocation("/dashboard");
-    }, 800);
+    }, 900);
   };
 
   return (
-    <div className="min-h-screen flex bg-white font-sans selection:bg-[#800000]/20">
-      {/* Left side - Form */}
-      <div className="w-full lg:w-[45%] flex flex-col px-8 sm:px-16 lg:px-24 xl:px-32 relative z-10 pt-10 pb-10 overflow-y-auto">
-        <div>
-          <Link href="/" className="inline-flex items-center gap-2.5 group cursor-pointer">
-            <div className="w-9 h-9 bg-[#800000] rounded-xl flex items-center justify-center text-white shadow-lg shadow-[#800000]/20 group-hover:scale-105 transition-transform duration-300">
-              <span className="material-symbols-outlined text-[18px]">verified_user</span>
+    <div style={{ minHeight: "100vh", display: "flex", background: "#F5F0E8", fontFamily: "'Inter', sans-serif" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&display=swap');
+        .login-field {
+          width: 100%;
+          height: 54px;
+          background: #FDFAF5;
+          border: 1.5px solid #E2D5C3;
+          border-radius: 12px;
+          padding: 0 16px 0 48px;
+          font-size: 15px;
+          color: #2A1A0E;
+          outline: none;
+          transition: all 0.2s;
+          font-family: 'Inter', sans-serif;
+        }
+        .login-field::placeholder { color: #B8A898; }
+        .login-field:focus {
+          border-color: #6B1E2B;
+          background: #FFFFFF;
+          box-shadow: 0 0 0 3px rgba(107,30,43,0.1);
+        }
+        .login-btn-primary {
+          width: 100%;
+          height: 54px;
+          background: linear-gradient(135deg, #6B1E2B 0%, #8B2535 100%);
+          color: #FDFAF5;
+          border: none;
+          border-radius: 12px;
+          font-size: 15px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: 'Inter', sans-serif;
+          transition: all 0.25s ease;
+          box-shadow: 0 4px 20px rgba(107,30,43,0.3);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          letter-spacing: 0.01em;
+        }
+        .login-btn-primary:hover:not(:disabled) {
+          background: linear-gradient(135deg, #7D2334 0%, #9E2D3F 100%);
+          transform: translateY(-1px);
+          box-shadow: 0 8px 28px rgba(107,30,43,0.35);
+        }
+        .login-btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+        .login-btn-evaluator {
+          width: 100%;
+          height: 54px;
+          background: #FFF8F0;
+          border: 1.5px solid #D4A574;
+          border-radius: 12px;
+          font-size: 14px;
+          font-weight: 600;
+          cursor: pointer;
+          font-family: 'Inter', sans-serif;
+          color: #6B1E2B;
+          transition: all 0.2s;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+        .login-btn-evaluator:hover:not(:disabled) {
+          background: #FDECD8;
+          border-color: #B8813A;
+          transform: translateY(-1px);
+        }
+        .login-btn-evaluator:disabled { opacity: 0.5; cursor: not-allowed; }
+        .login-label {
+          display: block;
+          font-size: 11px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: #9B7E6A;
+          margin-bottom: 8px;
+        }
+      `}</style>
+
+      {/* Left — Form Panel */}
+      <div style={{ width: "100%", maxWidth: 560, display: "flex", flexDirection: "column", padding: "48px 64px", background: "#FDFAF5", boxShadow: "4px 0 40px rgba(107,30,43,0.06)" }}>
+        {/* Logo */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
+          <Link href="/" style={{ display: "inline-flex", alignItems: "center", gap: 12, textDecoration: "none", marginBottom: 56 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 11, background: "linear-gradient(135deg, #6B1E2B, #8B2535)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(107,30,43,0.35)" }}>
+              <Shield size={20} color="#FDFAF5" />
             </div>
-            <span className="text-xl font-bold font-serif text-[#1e1b18] tracking-wide">Redact Review</span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: "#2A1A0E", fontFamily: "'Playfair Display', serif", letterSpacing: "-0.01em" }}>
+              Redact Review
+            </span>
           </Link>
-        </div>
+        </motion.div>
 
-        <div className="flex-1 flex flex-col justify-center mt-8">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+          style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}
+        >
+          {/* ── EVALUATOR QUICK ACCESS BANNER (top, prominent) ─────────── */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="w-full max-w-[400px]"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45 }}
+            style={{ marginBottom: 32, borderRadius: 16, background: "linear-gradient(135deg, #6B1E2B 0%, #8B2535 100%)", padding: "22px 24px", boxShadow: "0 8px 32px rgba(107,30,43,0.28)" }}
           >
-          <h1 className="text-3xl font-serif font-bold text-[#1e1b18] mb-3">Sign in</h1>
-          <p className="text-gray-500 text-[15px] mb-10 leading-relaxed">
-            Welcome back. Access your secure workspace to manage and audit documents.
-          </p>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-[13px] font-medium text-gray-700">Email address</label>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#800000] transition-colors">
-                  <Mail className="h-[18px] w-[18px]" />
-                </div>
-                <Input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-11 h-[52px] bg-gray-50 border-gray-200 text-gray-900 focus:bg-white focus:border-[#800000] focus:ring-1 focus:ring-[#800000] rounded-xl transition-all"
-                  placeholder="name@company.com"
-                />
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+              <span style={{ fontSize: 22 }}>⚡</span>
+              <div>
+                <p style={{ fontSize: 13, fontWeight: 800, color: "#FDFAF5", letterSpacing: "0.04em", textTransform: "uppercase" }}>Evaluator Quick Access</p>
+                <p style={{ fontSize: 12, color: "rgba(253,250,245,0.6)", marginTop: 1 }}>Click below — no typing needed</p>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-[13px] font-medium text-gray-700">Password</label>
-                <a href="#" className="text-[13px] text-[#800000] hover:text-[#570000] font-medium transition-colors">Forgot password?</a>
+            {/* Credentials display */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+              <div style={{ flex: 1, padding: "10px 14px", borderRadius: 10, background: "rgba(253,250,245,0.1)", border: "1px solid rgba(253,250,245,0.18)" }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(253,250,245,0.5)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>Email</p>
+                <p style={{ fontSize: 12, color: "#FDFAF5", fontFamily: "monospace" }}>harinin006@gmail.com</p>
               </div>
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#800000] transition-colors">
-                  <Lock className="h-[18px] w-[18px]" />
-                </div>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-11 h-[52px] bg-gray-50 border-gray-200 text-gray-900 focus:bg-white focus:border-[#800000] focus:ring-1 focus:ring-[#800000] rounded-xl transition-all"
-                  placeholder="••••••••"
-                />
+              <div style={{ flex: 1, padding: "10px 14px", borderRadius: 10, background: "rgba(253,250,245,0.1)", border: "1px solid rgba(253,250,245,0.18)" }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(253,250,245,0.5)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 3 }}>Password</p>
+                <p style={{ fontSize: 12, color: "#FDFAF5", fontFamily: "monospace" }}>Harini@0504</p>
               </div>
             </div>
 
-            <Button
-              type="submit"
+            <button
+              className="login-btn-evaluator-top"
+              onClick={handleAutoLogin}
               disabled={isLoading || isAutoLoggingIn}
-              className="w-full h-[52px] bg-[#1e1b18] text-white hover:bg-black rounded-xl shadow-lg shadow-black/5 font-semibold text-[15px] transition-all hover:scale-[1.02]"
+              style={{ width: "100%", height: 48, background: "#FDFAF5", border: "none", borderRadius: 12, fontSize: 15, fontWeight: 700, color: "#6B1E2B", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, fontFamily: "'Inter', sans-serif", transition: "all 0.2s", boxShadow: "0 2px 12px rgba(0,0,0,0.12)" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#F5F0E8"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#FDFAF5"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
             >
-              {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign in"}
-            </Button>
+              {isAutoLoggingIn
+                ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} />
+                : <><Zap size={17} fill="#6B1E2B" /><span>Login as Evaluator Instantly</span><ArrowRight size={16} /></>}
+            </button>
+          </motion.div>
+
+          {/* Divider */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+            <div style={{ flex: 1, height: 1, background: "#E2D5C3" }} />
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#B8A898", letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap" }}>Or sign in manually</span>
+            <div style={{ flex: 1, height: 1, background: "#E2D5C3" }} />
+          </div>
+
+          {/* Heading */}
+          <div style={{ marginBottom: 28 }}>
+            <h1 style={{ fontSize: 36, fontWeight: 900, color: "#2A1A0E", fontFamily: "'Playfair Display', serif", lineHeight: 1.1, letterSpacing: "-0.02em", marginBottom: 8 }}>
+              Welcome back.
+            </h1>
+            <p style={{ fontSize: 14, color: "#7A6355", lineHeight: 1.65 }}>
+              Sign in to your workspace and continue auditing documents.
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+            <div>
+              <label className="login-label">Email Address</label>
+              <div style={{ position: "relative" }}>
+                <Mail size={16} style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: focusedField === "email" ? "#6B1E2B" : "#B8A898", pointerEvents: "none", transition: "color 0.2s" }} />
+                <input
+                  type="email"
+                  className="login-field"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  onFocus={() => setFocusedField("email")}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="name@company.com"
+                  autoComplete="email"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                <label className="login-label" style={{ marginBottom: 0 }}>Password</label>
+                <a href="#" style={{ fontSize: 12, color: "#6B1E2B", fontWeight: 600, textDecoration: "none" }}>Forgot password?</a>
+              </div>
+              <div style={{ position: "relative" }}>
+                <Lock size={16} style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", color: focusedField === "password" ? "#6B1E2B" : "#B8A898", pointerEvents: "none", transition: "color 0.2s" }} />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  className="login-field"
+                  style={{ paddingRight: 48 }}
+                  value={password}
+                  onChange={e => setPassword(e.target.value)}
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => setFocusedField(null)}
+                  placeholder="••••••••••"
+                  autoComplete="current-password"
+                />
+                <button type="button" onClick={() => setShowPassword(!showPassword)}
+                  style={{ position: "absolute", right: 16, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", cursor: "pointer", color: "#B8A898", padding: 0, display: "flex" }}>
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ paddingTop: 4 }}>
+              <AnimatePresence mode="wait">
+                {loginSuccess ? (
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+                    className="login-btn-primary" style={{ background: "linear-gradient(135deg, #1a5c2a, #236b33)", pointerEvents: "none" }}>
+                    <CheckCircle size={18} />
+                    <span>Authenticated!</span>
+                  </motion.div>
+                ) : (
+                  <button type="submit" className="login-btn-primary" disabled={isLoading || isAutoLoggingIn}>
+                    {isLoading ? <Loader2 size={18} style={{ animation: "spin 1s linear infinite" }} /> : <><span>Sign In</span><ArrowRight size={16} /></>}
+                  </button>
+                )}
+              </AnimatePresence>
+            </div>
           </form>
 
-          <div className="relative mt-8 mb-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-[#e2bfb9]"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-[#5a413d] font-medium">For Evaluators</span>
-            </div>
-          </div>
-
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleAutoLogin}
-            disabled={isLoading || isAutoLoggingIn}
-            className="w-full h-[52px] bg-[#fff8f5] border border-[#800000]/20 text-[#800000] hover:bg-[#800000]/5 hover:border-[#800000]/40 rounded-xl font-bold text-[15px] transition-all flex items-center justify-center gap-2 group"
-          >
-            {isAutoLoggingIn ? <Loader2 className="h-5 w-5 animate-spin" /> : (
-              <>
-                <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">bolt</span>
-                Quick Login as Evaluator
-              </>
-            )}
-          </Button>
-
-          <div className="mt-8 text-center bg-[#fbf2ed] p-4 rounded-xl border border-[#e2bfb9]">
-            <p className="text-[13px] text-[#5a413d] font-medium">
-              Evaluator Credentials
-            </p>
-            <p className="text-[12px] text-gray-500 font-mono mt-1">
-              harinin006@gmail.com / Harini@0504
-            </p>
-          </div>
-
-          <div className="mt-8 text-center">
-            <p className="text-[14px] text-gray-500">
-              Don't have an account?{" "}
-              <Link href="/register" className="text-[#1e1b18] font-semibold hover:text-[#800000] transition-colors cursor-pointer">
-                Create one now
-              </Link>
-            </p>
-          </div>
-        </motion.div>
-        </div>
-      </div>
-
-      {/* Right side - Visual */}
-      <div className="hidden lg:flex flex-1 relative bg-[#fff8f5] overflow-hidden items-center justify-center border-l border-[#e2bfb9]">
-        {/* Glow effects */}
-        <div className="absolute top-1/4 -left-32 w-96 h-96 bg-[#800000] rounded-full mix-blend-multiply filter blur-[128px] opacity-10" />
-        <div className="absolute bottom-1/4 right-0 w-[500px] h-[500px] bg-amber-600 rounded-full mix-blend-multiply filter blur-[160px] opacity-10" />
-        
-        {/* Grid pattern */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxwYXRoIGQ9Ik0zNiAzNHYtNGgtdjRoNHYtNGgtdjRoLTRWMjJoNHYtNGgtNHYtNEg4djRoLTR2NGg0djRoLTR2NGg0djRoLTR2NGg0djRoLTR2NGg0djRINDIwaDR2LTRoNHY0aDR2LTRoNHY0aDR2LTRoNHY0aDR2LTNoLTR6IiBmaWxsPSIjRThERUQxIiBmaWxsLW9wYWNpdHk9IjAuNSIvPjwvZz48L3N2Zz4=')] opacity-60" />
-        
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1, delay: 0.2 }}
-          className="relative z-10 max-w-lg text-center"
-        >
-          <div className="w-24 h-24 mx-auto mb-8 rounded-2xl bg-white border border-[#e2bfb9] shadow-xl flex items-center justify-center">
-             <span className="material-symbols-outlined text-[40px] text-[#800000]">verified_user</span>
-          </div>
-          <h2 className="text-[36px] leading-[1.2] font-serif font-black text-[#1e1b18] mb-6">Enterprise-grade security, <br/> built for the modern web.</h2>
-          <p className="text-gray-600 text-[17px] leading-relaxed max-w-md mx-auto">
-            Our multi-engine consensus models ensure zero false positives and absolute compliance with HIPAA and GDPR standards.
+          {/* Register link */}
+          <p style={{ textAlign: "center", fontSize: 14, color: "#9B7E6A", marginTop: 24 }}>
+            Don't have an account?{" "}
+            <Link href="/register" style={{ color: "#6B1E2B", fontWeight: 700, textDecoration: "none" }}>Create one now</Link>
           </p>
         </motion.div>
       </div>
+
+      {/* Right — Visual Panel */}
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", background: "#F5F0E8", position: "relative", overflow: "hidden" }}>
+        {/* Subtle texture dots */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(#D4C0A8 1px, transparent 1px)", backgroundSize: "28px 28px", opacity: 0.5 }} />
+        {/* Warm glow */}
+        <div style={{ position: "absolute", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(107,30,43,0.08) 0%, transparent 70%)", top: "50%", left: "50%", transform: "translate(-50%,-50%)" }} />
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.3 }}
+          style={{ position: "relative", zIndex: 1, padding: 48, maxWidth: 420, textAlign: "center" }}
+        >
+          {/* Animated icon */}
+          <motion.div
+            animate={{ y: [0, -10, 0] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            style={{ width: 96, height: 96, borderRadius: 24, background: "#FDFAF5", border: "1.5px solid #E2D5C3", boxShadow: "0 20px 60px rgba(107,30,43,0.12)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 32px", fontSize: 42 }}>
+            🛡️
+          </motion.div>
+
+          <h2 style={{ fontSize: 38, fontWeight: 900, color: "#2A1A0E", fontFamily: "'Playfair Display', serif", lineHeight: 1.15, letterSpacing: "-0.02em", marginBottom: 16 }}>
+            Enterprise-grade<br />
+            <span style={{ color: "#6B1E2B" }}>security.</span>
+          </h2>
+          <p style={{ fontSize: 16, color: "#7A6355", lineHeight: 1.7, marginBottom: 36 }}>
+            Our multi-engine consensus models ensure zero false positives and absolute compliance with HIPAA and GDPR standards.
+          </p>
+
+          {/* Trust badges */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {TRUST_BADGES.map((badge, i) => (
+              <motion.div
+                key={badge.label}
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.5 + i * 0.12 }}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 18px", borderRadius: 12, background: "#FDFAF5", border: "1px solid #E2D5C3" }}>
+                <badge.icon size={16} style={{ color: "#6B1E2B", flexShrink: 0 }} />
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#4A2A1E" }}>{badge.label}</span>
+              </motion.div>
+            ))}
+          </div>
+
+          {/* Stat */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+            style={{ marginTop: 28, padding: "18px 24px", borderRadius: 14, background: "#6B1E2B" }}>
+            <p style={{ fontSize: 36, fontWeight: 900, color: "#FDFAF5", fontFamily: "'Playfair Display', serif" }}>99.8%</p>
+            <p style={{ fontSize: 12, color: "rgba(253,250,245,0.65)", marginTop: 4 }}>Detection accuracy across 1,247+ documents</p>
+          </motion.div>
+        </motion.div>
+      </div>
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

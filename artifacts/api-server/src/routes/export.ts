@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { supabase } from "@workspace/db";
 import { z } from "zod";
+import { decodeContent } from "./documents";
 
 const router: IRouter = Router();
 
@@ -31,7 +32,7 @@ router.get("/documents/:id/export", async (req, res): Promise<void> => {
     .order("start_offset", { ascending: true });
 
   // Apply redactions
-  let redactedContent = doc.content;
+  let redactedContent = decodeContent(doc.content || "").plain;
   const activeRedactions = (redactions || []).filter(r => r.status === "confirmed" || r.status === "user_added");
   const sorted = activeRedactions.sort((a, b) => b.start_offset - a.start_offset);
   for (const r of sorted) {
@@ -208,7 +209,7 @@ router.get("/documents/:id/export-redacted", async (req, res): Promise<void> => 
     const sorted = [...activeRedactions].sort((a, b) => Number(a.start_offset) - Number(b.start_offset));
 
     let lastIdx = 0;
-    const contentStr = doc.content || "";
+    const contentStr = decodeContent(doc.content || "").plain;
     
     // Replace non-ASCII characters with standard equivalents to avoid pdf-lib encoding errors
     // while preserving string length to keep offsets accurate.

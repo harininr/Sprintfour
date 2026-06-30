@@ -1,0 +1,471 @@
+Implement the following advanced enterprise features into the existing application.
+
+These features are intended to reduce human review errors rather than improve AI detection.
+
+The application should help users avoid cognitive mistakes while reviewing AI-generated redactions.
+
+Do not modify existing architecture.
+
+Extend the current application.
+
+Follow the existing design language.
+
+Maintain the beige, maroon and black theme.
+
+Use React, Tailwind, Framer Motion and Lucide Icons.
+
+Everything must be production-ready.
+
+---------------------------------------------------------
+FEATURE 1
+SELF-PATTERN NUDGES
+---------------------------------------------------------
+
+Implement a behavioral intelligence system.
+
+Track user actions during the current review session.
+
+Examples:
+
+User ignored
+
+Phone Number
+
+↓
+
+Ignored
+
+Phone Number
+
+↓
+
+Ignored
+
+Phone Number
+
+↓
+
+Ignored
+
+Phone Number
+
+↓
+
+Ignored
+
+Phone Number
+
+The application should recognize repetitive behavior.
+
+When similar decisions happen repeatedly,
+
+display a subtle nudge.
+
+Example:
+
+"You've ignored four similar phone-number detections in a row.
+
+Would you like to quickly review them again?"
+
+Display
+
+Review Again
+
+Dismiss
+
+Never interrupt aggressively.
+
+Never use popup dialogs.
+
+Use elegant notification cards.
+
+Track
+
+Repeated Ignore
+
+Repeated Accept
+
+Repeated Reject
+
+Repeated Type Changes
+
+Reset the tracking after user changes behaviour.
+
+This feature should reduce autopilot reviewing.
+
+---------------------------------------------------------
+FEATURE 2
+SEVERITY ENGINE
+---------------------------------------------------------
+
+Implement a Severity Engine.
+
+Severity is NOT confidence.
+
+Severity depends on the impact if missed.
+
+Create four levels.
+
+Critical
+
+High
+
+Medium
+
+Low
+
+Example
+
+Critical
+
+SSN
+
+Passport
+
+Credit Card
+
+Aadhaar
+
+PAN
+
+High
+
+Phone Number
+
+DOB
+
+Bank Account
+
+Medical ID
+
+Medium
+
+Address
+
+Email
+
+Low
+
+Person Name
+
+Organization
+
+Severity should always override confidence.
+
+Sorting priority
+
+Severity
+
+↓
+
+Confidence
+
+↓
+
+Document Position
+
+Use separate colors for severity.
+
+Critical
+
+Dark Red
+
+High
+
+Maroon
+
+Medium
+
+Amber
+
+Low
+
+Blue
+
+Display severity badge everywhere.
+
+Review Queue
+
+Details Panel
+
+Analysis Dashboard
+
+Export Report
+
+---------------------------------------------------------
+FEATURE 3
+GLANCEABLE CONSENSUS
+---------------------------------------------------------
+
+Replace long explainability panels.
+
+Users should understand AI agreement within one second.
+
+Display
+
+2 of 3 AI models detected this as Phone Number.
+
+↓
+
+Needs Manual Review
+
+Instead of
+
+Gemini
+
+Confidence
+
+Groq
+
+Confidence
+
+OpenRouter
+
+Confidence
+
+Provide
+
+Quick Summary
+
+Expandable Details
+
+Keep detailed explanations available under
+
+Show Details
+
+Collapsed by default.
+
+---------------------------------------------------------
+FEATURE 4
+BEFORE / AFTER COMPARISON
+---------------------------------------------------------
+
+Before exporting,
+
+display a comparison screen.
+
+Allow
+
+Side-by-side View
+
+Split View
+
+Toggle View
+
+Original Document
+
+↓
+
+Reviewed Document
+
+Highlight
+
+Added Redactions
+
+Removed Redactions
+
+User Corrections
+
+Remaining Visible PII
+
+Allow synchronized scrolling.
+
+Allow zoom.
+
+Provide
+
+Looks Good
+
+Return to Review
+
+---------------------------------------------------------
+FEATURE 5
+UNDO HISTORY
+---------------------------------------------------------
+
+Implement complete Undo support.
+
+Every action
+
+Accept
+
+Reject
+
+Ignore
+
+Edit Boundary
+
+Change Type
+
+Redact
+
+must be undoable.
+
+Provide
+
+Undo
+
+Redo
+
+History Timeline
+
+Example
+
+11:42
+
+Phone Number Redacted
+
+Undo
+
+11:43
+
+Email Ignored
+
+Undo
+
+11:44
+
+Boundary Changed
+
+Undo
+
+Autosave should never prevent undo.
+
+Undo should restore
+
+Review Queue
+
+Document
+
+Progress
+
+Statistics
+
+Analysis
+
+Everything.
+
+---------------------------------------------------------
+FEATURE 6
+SMART REVIEW FATIGUE DETECTION
+---------------------------------------------------------
+
+Detect when the reviewer is likely entering autopilot.
+
+Signals
+
+Very rapid clicking
+
+Repeated identical actions
+
+Ignoring many detections
+
+No scrolling
+
+Very short review time
+
+Display
+
+"You're reviewing unusually quickly.
+
+Consider checking the remaining high-risk items."
+
+Never interrupt.
+
+Only display once per session.
+
+---------------------------------------------------------
+FEATURE 7
+HIGH RISK REVIEW MODE
+---------------------------------------------------------
+
+Allow users to filter
+
+Critical Only
+
+High Risk Only
+
+Second Opinions Only
+
+AI Disagreements
+
+Remaining Only
+
+This helps reviewers focus on the most dangerous issues first.
+
+---------------------------------------------------------
+FEATURE 8
+FINAL CONFIRMATION SUMMARY
+---------------------------------------------------------
+
+Immediately before export,
+
+display
+
+Privacy Score
+
+Critical Issues Remaining
+
+High Risk Remaining
+
+Ignored Detections
+
+Second Opinions Remaining
+
+AI Agreement Score
+
+Review Duration
+
+User Corrections
+
+Only then allow export.
+
+---------------------------------------------------------
+FEATURE 9
+SESSION INSIGHTS
+---------------------------------------------------------
+
+Generate insights about user behaviour.
+
+Examples
+
+Most corrections involved phone numbers.
+
+AI disagreements occurred mostly on names.
+
+User ignored three medium-risk entities.
+
+Critical items were reviewed carefully.
+
+Present as insight cards.
+
+---------------------------------------------------------
+FEATURE 10
+REVIEW QUALITY SCORE
+---------------------------------------------------------
+
+Generate a Review Quality Score.
+
+Factors
+
+High-risk items reviewed
+
+Ignored detections
+
+Second opinions reviewed
+
+AI disagreements resolved
+
+Critical entities remaining
+
+Display
+
+Excellent
+
+Good
+
+Needs Attention
+
+Provide explanation.
+
+This score measures review quality rather than document quality.
