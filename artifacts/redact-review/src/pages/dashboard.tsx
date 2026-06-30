@@ -420,7 +420,11 @@ export default function Dashboard() {
               {uploadError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 border border-red-100">{uploadError}</p>}
 
               <Button type="submit" disabled={!file || isBusy} className="w-full bg-[#6B1E2B] text-white hover:bg-[#7D2334] disabled:opacity-50 h-11 rounded-xl">
-                {uploading ? <><span className="animate-spin mr-2">⏳</span> Extracting text…</> : createDoc.isPending ? "Saving…" : <><Upload className="mr-2 h-4 w-4" /> Upload & Import</>}
+                {isBusy ? (
+                  <><span className="animate-spin mr-2">⏳</span> Scanning the document, please wait...</>
+                ) : (
+                  <><Upload className="mr-2 h-4 w-4" /> Upload & Import</>
+                )}
               </Button>
             </form>
           )}
