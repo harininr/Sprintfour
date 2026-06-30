@@ -1,0 +1,741 @@
+You are now acting as a Senior Product Designer, Staff Frontend Engineer, and UX Architect.
+
+DO NOT rebuild the project.
+
+DO NOT change the existing architecture.
+
+DO NOT remove any existing functionality.
+
+Your task is to transform the existing application into a premium, enterprise-grade SaaS product with exceptional UI/UX while preserving all functionality.
+
+======================================================================
+DESIGN GOAL
+======================================================================
+
+The application should feel like software that would actually be used by law firms, healthcare organizations, compliance teams, and enterprise security professionals.
+
+The overall experience should resemble products like:
+
+• Linear
+• Notion
+• Stripe Dashboard
+• Vercel
+• Arc Browser
+• Raycast
+• Figma
+
+The interface should feel modern, premium, elegant, clean, minimal and trustworthy.
+
+Avoid generic dashboard designs.
+
+Avoid Bootstrap-style layouts.
+
+Avoid excessive colors.
+
+Avoid cartoonish interfaces.
+
+STRICTLY NO EMOJIS.
+
+Use only Lucide Icons.
+
+======================================================================
+COLOR PALETTE
+======================================================================
+
+Background
+
+#F5F1EA (Soft Beige)
+
+Cards
+
+#FFFDF9
+
+Primary
+
+#6B1E2B (Deep Maroon)
+
+Primary Hover
+
+#7D2334
+
+Primary Active
+
+#531520
+
+Text
+
+#1E1E1E
+
+Secondary Text
+
+#666666
+
+Muted Text
+
+#888888
+
+Borders
+
+#E5DDD2
+
+Sidebar
+
+#FAF7F2
+
+Success
+
+#4C7A53
+
+Warning
+
+#C58B30
+
+Danger
+
+#A92B2B
+
+Use black only for typography.
+
+Use maroon only for important actions.
+
+Never overuse maroon.
+
+Maintain lots of whitespace.
+
+======================================================================
+TYPOGRAPHY
+======================================================================
+
+Use
+
+Headings
+
+Playfair Display
+
+Body
+
+Inter
+
+Buttons
+
+Inter Medium
+
+Cards
+
+Inter
+
+Use proper typography hierarchy.
+
+Large elegant headings.
+
+Readable spacing.
+
+Comfortable line heights.
+
+======================================================================
+OVERALL UI IMPROVEMENTS
+======================================================================
+
+Redesign the entire application.
+
+Every screen should feel premium.
+
+Every card should have
+
+Rounded corners
+
+Soft shadows
+
+Light borders
+
+Proper spacing
+
+Hover animation
+
+Smooth transitions
+
+Use glassmorphism subtly where appropriate.
+
+Maintain consistent spacing throughout the application.
+
+Everything should be aligned perfectly.
+
+======================================================================
+ANIMATIONS
+======================================================================
+
+Use Framer Motion.
+
+Implement
+
+Page transitions
+
+Card hover animations
+
+Sidebar transitions
+
+Button hover
+
+Button press
+
+Loading transitions
+
+Fade animations
+
+Slide animations
+
+Progress animations
+
+Smooth expand/collapse
+
+Animated counters
+
+Animated progress bars
+
+No abrupt changes.
+
+Everything should feel smooth.
+
+======================================================================
+LANDING PAGE
+======================================================================
+
+Redesign completely.
+
+Create a beautiful hero section.
+
+Large headline.
+
+Elegant subtitle.
+
+Premium upload card.
+
+Drag-and-drop upload zone.
+
+Large upload illustration.
+
+Recent documents section.
+
+Recent review history.
+
+Quick statistics.
+
+Beautiful background gradients.
+
+Floating decorative elements.
+
+Modern footer.
+
+======================================================================
+UPLOAD EXPERIENCE
+======================================================================
+
+Make upload beautiful.
+
+Animated upload icon.
+
+Drag overlay.
+
+Progress animation.
+
+Success animation.
+
+File preview.
+
+File information card.
+
+Estimated processing time.
+
+======================================================================
+PROCESSING SCREEN
+======================================================================
+
+Replace spinner.
+
+Create a multi-stage processing pipeline.
+
+Example
+
+Reading PDF
+
+Completed
+
+Running Gemini
+
+Processing
+
+Running Groq
+
+Waiting
+
+Running OpenRouter
+
+Waiting
+
+Consensus Engine
+
+Waiting
+
+Preparing Review Workspace
+
+Waiting
+
+Animate every stage.
+
+Show estimated progress.
+
+======================================================================
+DASHBOARD
+======================================================================
+
+Redesign dashboard.
+
+Top section
+
+Welcome message
+
+Review statistics
+
+Privacy score
+
+Recent documents
+
+Recent activity
+
+Quick actions
+
+Beautiful statistic cards.
+
+Animated counters.
+
+Professional charts where useful.
+
+======================================================================
+REVIEW WORKSPACE
+======================================================================
+
+Completely redesign.
+
+Layout
+
+Top Navigation
+
+↓
+
+Toolbar
+
+↓
+
+Left Sidebar
+
+↓
+
+Center Document Viewer
+
+↓
+
+Right Review Panel
+
+The document viewer should occupy maximum screen space.
+
+The sidebar should be collapsible.
+
+The right panel should animate smoothly.
+
+======================================================================
+DOCUMENT VIEWER
+======================================================================
+
+Make the document feel like an actual document editor.
+
+Beautiful typography.
+
+Readable line spacing.
+
+Inline highlights.
+
+Smooth hover.
+
+Selection animation.
+
+Scroll indicator.
+
+Document minimap.
+
+Sticky toolbar.
+
+Zoom controls.
+
+Fullscreen mode.
+
+======================================================================
+HIGHLIGHTS
+======================================================================
+
+Redesign highlight styles.
+
+High Confidence
+
+Soft Green
+
+Medium Confidence
+
+Warm Yellow
+
+Second Opinion
+
+Deep Maroon
+
+User Corrected
+
+Blue
+
+Hovered highlight
+
+Glow
+
+Border animation
+
+Tooltip
+
+Smooth transition
+
+======================================================================
+REVIEW PANEL
+======================================================================
+
+Completely redesign.
+
+Include
+
+Entity Type
+
+Detected Text
+
+Confidence
+
+Consensus
+
+AI Models
+
+Reasoning
+
+Confidence Meter
+
+Detected By
+
+Suggested Action
+
+Buttons
+
+Accept
+
+Reject
+
+Redact
+
+Ignore
+
+Change Type
+
+Edit Span
+
+Everything beautifully spaced.
+
+======================================================================
+CONSENSUS VISUALIZATION
+======================================================================
+
+Replace plain text.
+
+Create beautiful AI cards.
+
+Example
+
+Gemini
+
+Detected
+
+Groq
+
+Detected
+
+OpenRouter
+
+Not Detected
+
+Consensus
+
+2 / 3 Agree
+
+Needs Review
+
+Include model icons.
+
+Progress bars.
+
+Agreement meter.
+
+Confidence indicator.
+
+======================================================================
+AI DEBATE PANEL
+======================================================================
+
+Create an optional expandable section.
+
+Show each AI's reasoning separately.
+
+Display how each AI interpreted the selected entity.
+
+Show the final consensus explanation.
+
+Make this visually elegant.
+
+======================================================================
+REVIEW QUEUE
+======================================================================
+
+Redesign.
+
+Categorize
+
+High Risk
+
+Needs Review
+
+Completed
+
+Ignored
+
+Include
+
+Icons
+
+Counters
+
+Progress bars
+
+Priority badges
+
+Filters
+
+Search
+
+Animated selection.
+
+======================================================================
+SEARCH
+======================================================================
+
+Global search.
+
+Highlight every occurrence.
+
+Instant filtering.
+
+Animated results.
+
+======================================================================
+FILTERS
+======================================================================
+
+Beautiful segmented controls.
+
+All
+
+High Risk
+
+Medium
+
+Low
+
+Second Opinion
+
+Reviewed
+
+Ignored
+
+======================================================================
+KEYBOARD SHORTCUTS
+======================================================================
+
+Create shortcut modal.
+
+?
+
+opens shortcut help.
+
+Display all shortcuts beautifully.
+
+======================================================================
+ACTIVITY PANEL
+======================================================================
+
+Create timeline.
+
+Show
+
+Review started
+
+Detection corrected
+
+Entity ignored
+
+Export completed
+
+Timestamp
+
+Animated timeline.
+
+======================================================================
+PRIVACY SUMMARY
+======================================================================
+
+Instead of plain numbers
+
+Create beautiful cards.
+
+Privacy Score
+
+Trust Meter
+
+AI Agreement
+
+Detected Entities
+
+Needs Review
+
+Second Opinions
+
+Animated circular progress.
+
+======================================================================
+EXPORT
+======================================================================
+
+Completely redesign.
+
+Before exporting
+
+Run Final Safety Scan.
+
+Animate the scan.
+
+Display
+
+Review Summary
+
+Privacy Score
+
+Remaining Risks
+
+Warnings
+
+Allow
+
+Review Again
+
+Export Anyway
+
+Generate beautiful export confirmation.
+
+======================================================================
+EMPTY STATES
+======================================================================
+
+Every screen should have beautiful empty states.
+
+Illustrations.
+
+Helpful messages.
+
+Call-to-action buttons.
+
+Never leave blank screens.
+
+======================================================================
+TOASTS
+======================================================================
+
+Redesign notifications.
+
+Professional appearance.
+
+Soft animations.
+
+Success
+
+Warning
+
+Error
+
+Info
+
+======================================================================
+RESPONSIVENESS
+======================================================================
+
+Perfect responsiveness.
+
+Desktop
+
+Laptop
+
+Tablet
+
+Mobile
+
+Collapsible sidebar.
+
+Adaptive layouts.
+
+======================================================================
+ACCESSIBILITY
+======================================================================
+
+Keyboard navigation.
+
+ARIA labels.
+
+Focus states.
+
+Color contrast.
+
+Accessible buttons.
+
+======================================================================
+FINAL REQUIREMENT
+======================================================================
+
+Do NOT remove existing functionality.
+
+Improve every existing page.
+
+Improve every component.
+
+Improve every interaction.
+
+Improve every animation.
+
+Improve every spacing.
+
+Improve every typography.
+
+Improve every card.
+
+Improve every button.
+
+Improve every modal.
+
+Improve every table.
+
+Improve every sidebar.
+
+Improve every form.
+
+The final result should feel indistinguishable from a premium enterprise SaaS product built by an experienced design team.
+
+Every pixel should feel intentional.
+
+Do not stop until every page has been redesigned to production quality.

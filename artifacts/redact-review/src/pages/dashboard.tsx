@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useListDocuments, useCreateDocument, useDeleteDocument, getListDocumentsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "wouter";
-import { Plus, FileText, AlertCircle, CheckCircle2, Clock, Trash2 } from "lucide-react";
+import { Plus, FileText, AlertCircle, CheckCircle2, Clock, Trash2, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Dashboard() {
   const { data: documents, isLoading } = useListDocuments();
@@ -50,17 +50,21 @@ export default function Dashboard() {
     }
   };
 
+  const totalDocs = documents?.length || 0;
+  const inReview = documents?.filter(d => d.status === "in_review").length || 0;
+  const completed = documents?.filter(d => d.status === "completed").length || 0;
+
   return (
-    <div className="min-h-screen bg-muted/30 p-8">
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-6xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Redact Review</h1>
-            <p className="text-muted-foreground">Document PII Redaction Dashboard</p>
+            <h1 className="text-2xl font-semibold font-serif text-[#1E1E1E]">Redact Review</h1>
+            <p className="text-muted-foreground font-sans">Document Privacy Review</p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button className="bg-[#6B1E2B] text-white hover:bg-[#7D2334]">
                 <Plus className="mr-2 h-4 w-4" /> New Document
               </Button>
             </DialogTrigger>
@@ -77,7 +81,7 @@ export default function Dashboard() {
                   <Label htmlFor="content">Content</Label>
                   <Textarea id="content" value={content} onChange={e => setContent(e.target.value)} required className="h-32" />
                 </div>
-                <Button type="submit" disabled={createDoc.isPending}>
+                <Button type="submit" disabled={createDoc.isPending} className="bg-[#6B1E2B] text-white hover:bg-[#7D2334]">
                   {createDoc.isPending ? "Creating..." : "Create"}
                 </Button>
               </form>
@@ -85,61 +89,102 @@ export default function Dashboard() {
           </Dialog>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { label: "Total Documents", value: totalDocs },
+            { label: "In Review", value: inReview },
+            { label: "Completed", value: completed },
+          ].map((stat, i) => (
+            <div key={i} className="bg-card rounded-xl border border-[#E5DDD2] shadow-sm p-6">
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="font-serif text-4xl text-[#1E1E1E]"
+              >
+                {stat.value}
+              </motion.div>
+              <div className="font-sans text-muted-foreground mt-1">{stat.label}</div>
+            </div>
+          ))}
+        </div>
+
         {isLoading ? (
-          <div className="text-center text-muted-foreground py-12">Loading documents...</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="animate-pulse bg-[#E5DDD2] rounded-2xl h-48"></div>
+            ))}
+          </div>
         ) : !documents?.length ? (
-          <div className="text-center bg-card rounded-xl border border-dashed py-24">
-            <FileText className="mx-auto h-12 w-12 text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-medium">No documents</h3>
-            <p className="text-muted-foreground mt-1">Upload a document to start reviewing redactions.</p>
+          <div className="text-center py-24">
+            <ShieldAlert className="mx-auto h-12 w-12 text-[#1E1E1E] mb-4 opacity-50" />
+            <h3 className="font-serif text-2xl text-[#1E1E1E]">No documents</h3>
+            <p className="font-sans text-[#666666] mt-2">Upload a document to start reviewing redactions.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {documents.map(doc => (
-              <Card key={doc.id} className="flex flex-col relative group">
-                <CardHeader>
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="line-clamp-1 pr-8">{doc.title}</CardTitle>
-                      <CardDescription className="flex items-center gap-1.5 mt-1">
-                        {doc.status === "completed" ? (
-                          <><CheckCircle2 className="h-4 w-4 text-status-confirmed" /> Completed</>
-                        ) : doc.status === "in_review" ? (
-                          <><AlertCircle className="h-4 w-4 text-status-pending" /> In Review</>
-                        ) : (
-                          <><Clock className="h-4 w-4 text-muted-foreground" /> Pending</>
-                        )}
-                      </CardDescription>
+            <AnimatePresence>
+              {documents.map(doc => {
+                const isCompleted = doc.status === "completed";
+                const progress = doc.totalRedactions > 0 ? ((doc.totalRedactions - doc.pendingCount) / doc.totalRedactions) * 100 : 100;
+                
+                return (
+                  <motion.div 
+                    key={doc.id} 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    whileHover={{ y: -2, boxShadow: "0 8px 24px rgba(0,0,0,0.1)" }}
+                    transition={{ duration: 0.15 }}
+                    className="bg-[#FFFDF9] border border-[#E5DDD2] rounded-2xl shadow-sm p-6 flex flex-col relative group"
+                  >
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="font-serif font-medium text-[#1E1E1E] line-clamp-2 pr-8">{doc.title}</h3>
+                        <div className="flex items-center gap-1.5 mt-1 text-sm">
+                          {isCompleted ? (
+                            <><CheckCircle2 className="h-3.5 w-3.5 text-[#4C7A53]" /> <span className="text-[#4C7A53]">Completed</span></>
+                          ) : doc.status === "in_review" ? (
+                            <><AlertCircle className="h-3.5 w-3.5 text-[#C58B30]" /> <span className="text-[#C58B30]">In Review</span></>
+                          ) : (
+                            <><Clock className="h-3.5 w-3.5 text-gray-500" /> <span className="text-gray-500">Pending</span></>
+                          )}
+                        </div>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="absolute top-4 right-4 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-[#A92B2B]"
+                        onClick={(e) => handleDelete(doc.id, e)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="absolute top-4 right-4 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                      onClick={(e) => handleDelete(doc.id, e)}
-                    >
-                      <Trash2 className="h-4 w-4" />
+
+                    <div className="flex-1 space-y-4 mb-6">
+                      <div className="space-y-1.5">
+                        <div className="h-1 w-full bg-[#E5DDD2] rounded-full overflow-hidden">
+                          <div className="h-full bg-[#6B1E2B] transition-all" style={{ width: `${progress}%` }} />
+                        </div>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#666666]">Total redactions:</span>
+                        <span className="font-medium text-[#1E1E1E] text-right">{doc.totalRedactions}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-[#666666]">Pending review:</span>
+                        <span className="font-medium text-[#1E1E1E] text-right">{doc.pendingCount}</span>
+                      </div>
+                    </div>
+
+                    <Button asChild variant={isCompleted ? "outline" : "default"} className={`w-full ${isCompleted ? 'border-[#E5DDD2] text-[#1E1E1E]' : 'bg-[#6B1E2B] text-white hover:bg-[#7D2334]'}`}>
+                      <Link href={isCompleted ? `/review/${doc.id}/complete` : `/review/${doc.id}`}>
+                        {isCompleted ? "View Summary" : doc.status === "in_review" ? "Continue Review" : "Start Review"}
+                      </Link>
                     </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex-1 flex flex-col justify-end gap-4">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Total redactions:</span>
-                    <span className="font-medium">{doc.totalRedactions}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Pending review:</span>
-                    <span className="font-medium text-status-pending">{doc.pendingCount}</span>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button asChild variant={doc.status === "completed" ? "outline" : "default"} className="w-full">
-                    <Link href={doc.status === "completed" ? `/review/${doc.id}/complete` : `/review/${doc.id}`}>
-                      {doc.status === "completed" ? "View Summary" : doc.status === "in_review" ? "Continue Review" : "Start Review"}
-                    </Link>
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
       </div>

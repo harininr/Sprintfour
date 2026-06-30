@@ -15,11 +15,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerDescription, DrawerTrigger } from "@/components/ui/drawer";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Check, X, AlertTriangle, Eye, ShieldAlert, ArrowRight, MousePointerSquareDashed, Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Check, X, AlertTriangle, Eye, ShieldAlert, ArrowLeft, MousePointerSquareDashed, Trash2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function ReviewWorkspace() {
   const params = useParams();
@@ -76,7 +76,6 @@ export default function ReviewWorkspace() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
 
       if (e.key === 's' || e.key === 'S') {
@@ -90,12 +89,12 @@ export default function ReviewWorkspace() {
       if (e.key === 'j' || e.key === 'J') {
         const nextIndex = currentIndex < pendingRedactions.length - 1 ? currentIndex + 1 : 0;
         setSelectedRedactionId(pendingRedactions[nextIndex].id);
-        document?.getElementById(`redaction-${pendingRedactions[nextIndex].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.document.getElementById(`redaction-${pendingRedactions[nextIndex].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
       if (e.key === 'k' || e.key === 'K') {
         const prevIndex = currentIndex > 0 ? currentIndex - 1 : pendingRedactions.length - 1;
         setSelectedRedactionId(pendingRedactions[prevIndex].id);
-        document?.getElementById(`redaction-${pendingRedactions[prevIndex].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.document.getElementById(`redaction-${pendingRedactions[prevIndex].id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }
 
       if (selectedRedactionId) {
@@ -121,7 +120,6 @@ export default function ReviewWorkspace() {
     const sel = window.getSelection();
     if (!sel || sel.isCollapsed || !contentRef.current) {
       if (!selection) return;
-      // Don't clear selection immediately to allow clicking the popover
       return; 
     }
 
@@ -168,9 +166,10 @@ export default function ReviewWorkspace() {
 
   if (isLoading || !document) return (
     <div className="h-screen flex items-center justify-center bg-background">
-      <div className="flex flex-col items-center gap-4 text-muted-foreground">
-        <ShieldAlert className="h-12 w-12 animate-pulse" />
-        <p>Loading secure workspace...</p>
+      <div className="flex flex-col items-center gap-4 text-[#1E1E1E]">
+        <ShieldAlert className="h-12 w-12 text-[#6B1E2B] animate-pulse" />
+        <p className="font-serif text-xl">Loading secure workspace...</p>
+        <p className="text-muted-foreground text-sm font-sans">Preparing document and analytics.</p>
       </div>
     </div>
   );
@@ -197,7 +196,6 @@ export default function ReviewWorkspace() {
     redactions.forEach(r => markers.push({ ...r, type: 'redaction' }));
     if (suspiciousText) {
       suspiciousText.forEach((s: any) => {
-        // Only add suspicious span if it doesn't overlap with a redaction
         const overlaps = redactions.some(r => 
           (s.startOffset >= r.startOffset && s.startOffset < r.endOffset) ||
           (s.endOffset > r.startOffset && s.endOffset <= r.endOffset) ||
@@ -229,51 +227,58 @@ export default function ReviewWorkspace() {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden text-foreground">
+    <div className="h-screen flex flex-col overflow-hidden text-foreground">
       {/* Topbar */}
-      <header className="h-16 border-b flex items-center justify-between px-6 bg-card shrink-0 shadow-sm z-10 relative">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="h-5 w-5 text-primary" />
-            <h1 className="font-semibold text-lg tracking-tight">{document.title}</h1>
-          </div>
-          <div className="h-6 w-px bg-border"></div>
-          <div className="flex flex-col gap-1 w-48">
-            <div className="flex justify-between text-xs text-muted-foreground font-medium">
-              <span>Review Progress</span>
-              <span>{totalReviewed} / {totalItems}</span>
-            </div>
-            <Progress value={progress} className="h-1.5" />
-          </div>
+      <header className="h-14 shrink-0 bg-[#FFFDF9] border-b border-[#E5DDD2] shadow-sm px-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => setLocation("/")} className="text-[#666666]">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <div className="h-6 w-px bg-[#E5DDD2]"></div>
+          <h1 className="font-serif font-semibold text-[#1E1E1E] text-lg truncate max-w-xs">{document.title}</h1>
         </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-4 w-48">
+          <div className="flex flex-col w-full">
+            <div className="flex justify-between text-[11px] text-[#888888] font-medium mb-1">
+              <span>{totalReviewed} / {totalItems} reviewed</span>
+            </div>
+            <div className="h-1 w-full bg-[#E5DDD2] rounded-full overflow-hidden">
+               <div className="h-full bg-[#6B1E2B] transition-all" style={{ width: `${progress}%` }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4">
           {suspiciousText && suspiciousText.length > 0 && (
             <Drawer open={suspiciousDrawerOpen} onOpenChange={setSuspiciousDrawerOpen}>
               <DrawerTrigger asChild>
-                <Button variant="destructive" size="sm" className="gap-2 bg-status-suspicious hover:bg-status-suspicious/90 shadow-md animate-in slide-in-from-top-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  {suspiciousText.length} Missed Risks
+                <Button variant="outline" size="sm" className="gap-2 bg-orange-500 text-white border-none hover:bg-orange-600 animate-in slide-in-from-top-2">
+                  <span className="flex h-2 w-2 relative">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-white"></span>
+                  </span>
+                  {suspiciousText.length} Alerts
                 </Button>
               </DrawerTrigger>
-              <DrawerContent>
+              <DrawerContent className="bg-[#FFFDF9]">
                 <div className="mx-auto w-full max-w-2xl">
                   <DrawerHeader>
-                    <DrawerTitle className="flex items-center gap-2 text-status-suspicious">
-                      <AlertTriangle className="h-5 w-5" />
-                      Suspicious Text Spans
+                    <DrawerTitle className="flex items-center gap-2 text-[#1E1E1E] font-serif text-xl">
+                      <AlertTriangle className="h-5 w-5 text-orange-500" />
+                      Suspicious Spans
                     </DrawerTitle>
-                    <DrawerDescription>
-                      The AI might have missed these. Review them carefully.
+                    <DrawerDescription className="text-[#666666]">
+                      Review spans missed by AI detection.
                     </DrawerDescription>
                   </DrawerHeader>
                   <div className="p-4 space-y-4 max-h-[50vh] overflow-y-auto">
                     {suspiciousText.map((st: any, i: number) => (
-                      <div key={i} className="flex flex-col gap-2 p-4 border border-status-suspicious/30 bg-status-suspicious/5 rounded-lg">
-                        <div className="font-mono text-sm bg-background p-2 rounded border">{st.text}</div>
+                      <div key={i} className="flex flex-col gap-2 p-4 border border-orange-200 bg-orange-50 rounded-xl">
+                        <div className="font-mono text-sm bg-white p-2 rounded-md border border-orange-100 text-[#1E1E1E]">{st.text}</div>
                         <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">{st.reason}</span>
-                          <Badge variant={st.riskLevel === 'high' ? 'destructive' : 'secondary'}>{st.riskLevel}</Badge>
+                          <span className="text-sm text-gray-600">{st.reason}</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${st.riskLevel === 'high' ? 'bg-[#A92B2B] text-white' : st.riskLevel === 'medium' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-600'}`}>{st.riskLevel}</span>
                         </div>
                       </div>
                     ))}
@@ -283,46 +288,36 @@ export default function ReviewWorkspace() {
             </Drawer>
           )}
 
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <span className="hidden lg:flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md border">
-              <kbd className="font-mono font-medium">J</kbd>/<kbd className="font-mono font-medium">K</kbd> next
-            </span>
-            <span className="hidden lg:flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md border">
-              <kbd className="font-mono font-medium">C</kbd> confirm
-            </span>
-            <span className="hidden lg:flex items-center gap-1.5 bg-muted px-2 py-1 rounded-md border">
-              <kbd className="font-mono font-medium">R</kbd> reject
-            </span>
-            <span className="hidden lg:flex items-center gap-1.5 bg-status-suspicious/10 text-status-suspicious px-2 py-1 rounded-md border border-status-suspicious/20">
-              <kbd className="font-mono font-medium">S</kbd> risks
-            </span>
-            <div className="h-6 w-px bg-border mx-2"></div>
-            <Button 
-              disabled={pendingRedactions.length > 0 || completeMutation.isPending} 
-              onClick={handleComplete}
-              className="font-medium"
-            >
-              Complete Review <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+          <div className="hidden lg:flex items-center gap-2">
+            <kbd className="font-mono text-xs bg-[#F5F1EA] text-[#666666] px-1.5 py-0.5 rounded">J/K</kbd>
+            <kbd className="font-mono text-xs bg-[#F5F1EA] text-[#666666] px-1.5 py-0.5 rounded">C/R</kbd>
           </div>
+
+          <Button 
+            disabled={pendingRedactions.length > 0 || completeMutation.isPending} 
+            onClick={handleComplete}
+            className="font-medium bg-[#6B1E2B] text-white hover:bg-[#7D2334] disabled:opacity-40"
+          >
+            Complete Review
+          </Button>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
         {/* Document Panel */}
         <main 
-          className="flex-1 overflow-y-auto p-8 lg:p-16 relative bg-background"
+          className="flex-1 overflow-y-auto bg-background"
           onMouseUp={handleMouseUp}
         >
-          <div className="max-w-3xl mx-auto">
-            <div className="mb-8 flex items-center text-muted-foreground text-sm gap-2">
+          <div className="max-w-[720px] mx-auto py-12 px-8">
+            <div className="rounded-lg border border-[#E5DDD2] bg-[#FFFDF9] px-4 py-2 text-sm text-[#666666] flex items-center gap-2 mb-8">
               <MousePointerSquareDashed className="h-4 w-4" />
               <span>Select any text to manually add a redaction.</span>
             </div>
             
             <div 
               ref={contentRef}
-              className="font-serif text-lg leading-[1.8] text-foreground/90 whitespace-pre-wrap selection:bg-primary/20 selection:text-primary"
+              className="font-serif text-[17px] leading-[1.85] text-[#1E1E1E]/90 whitespace-pre-wrap"
             >
               {chunks.map((chunk) => {
                 if (chunk.isNormal) return <span key={chunk.id}>{chunk.text}</span>;
@@ -331,21 +326,20 @@ export default function ReviewWorkspace() {
                   const r = chunk.redaction;
                   const isSelected = selectedRedactionId === r.id;
                   
-                  let bgClass = "bg-status-pending/20 text-status-pending-foreground border-b-2 border-status-pending";
-                  if (r.status === "confirmed") bgClass = "bg-status-confirmed text-status-confirmed-foreground";
-                  if (r.status === "rejected") bgClass = "opacity-50 line-through decoration-status-rejected";
-                  if (r.status === "user_added") bgClass = "bg-status-user/20 text-status-user-foreground border-b-2 border-status-user";
+                  let highlightClass = "";
+                  if (r.status === "pending") highlightClass = "bg-amber-50 border-b-2 border-amber-400 text-amber-900 px-0.5 rounded-sm cursor-pointer transition-all duration-150 hover:bg-amber-100";
+                  else if (r.status === "confirmed") highlightClass = "bg-[#A92B2B] text-white px-0.5 rounded-sm cursor-pointer";
+                  else if (r.status === "rejected") highlightClass = "opacity-40 line-through decoration-gray-400 cursor-pointer";
+                  else if (r.status === "user_added") highlightClass = "bg-indigo-50 border-b-2 border-indigo-400 text-indigo-900 px-0.5 rounded-sm cursor-pointer transition-all duration-150";
                   
+                  if (isSelected) highlightClass += " ring-2 ring-[#6B1E2B] ring-offset-1 z-10 relative";
+
                   return (
                     <Tooltip key={chunk.id}>
                       <TooltipTrigger asChild>
                         <span 
                           id={`redaction-${r.id}`}
-                          className={`
-                            px-1 rounded-sm cursor-pointer transition-all duration-200
-                            ${bgClass}
-                            ${isSelected ? 'ring-2 ring-primary ring-offset-2 scale-[1.02] shadow-sm z-10 relative' : ''}
-                          `}
+                          className={highlightClass}
                           onClick={() => setSelectedRedactionId(r.id)}
                         >
                           {chunk.text}
@@ -369,12 +363,12 @@ export default function ReviewWorkspace() {
                     <Tooltip key={chunk.id}>
                       <TooltipTrigger asChild>
                         <span 
-                          className="bg-status-suspicious/30 text-status-suspicious-foreground border-b-2 border-status-suspicious font-medium px-1 rounded-sm cursor-help relative animate-pulse"
+                          className="bg-orange-50 border-b-2 border-orange-400 font-medium animate-pulse cursor-help px-0.5 rounded-sm"
                         >
                           {chunk.text}
                         </span>
                       </TooltipTrigger>
-                      <TooltipContent side="top" className="text-xs font-sans bg-status-suspicious text-white border-none">
+                      <TooltipContent side="top" className="text-xs font-sans bg-orange-500 text-white border-none">
                         <div className="font-semibold flex items-center gap-1">
                           <AlertTriangle className="h-3 w-3" /> Missed Risk
                         </div>
@@ -395,24 +389,24 @@ export default function ReviewWorkspace() {
               className="fixed z-50 animate-in fade-in zoom-in-95 duration-200"
               style={{ left: selection.x, top: selection.y, transform: 'translate(-50%, -100%)' }}
             >
-              <div className="bg-popover border text-popover-foreground shadow-lg rounded-lg p-3 flex flex-col gap-3 w-64">
-                <div className="text-sm font-medium">Mark as PII?</div>
-                <div className="text-xs font-mono bg-muted p-1.5 rounded truncate">{selection.text}</div>
+              <div className="bg-[#FFFDF9] border border-[#E5DDD2] shadow-xl rounded-xl p-4 flex flex-col gap-3 w-64">
+                <div className="text-sm font-medium font-serif">Mark as PII</div>
+                <div className="text-xs font-mono bg-[#F5F1EA] rounded-md px-2 py-1 text-[#1E1E1E] truncate">{selection.text}</div>
                 <div className="flex gap-2">
                   <Select value={newCategory} onValueChange={(v: any) => setNewCategory(v)}>
-                    <SelectTrigger className="h-8 flex-1">
+                    <SelectTrigger className="h-8 flex-1 text-xs">
                       <SelectValue placeholder="Category" />
                     </SelectTrigger>
                     <SelectContent>
                       {Object.values(RedactionInputCategory).map(cat => (
-                        <SelectItem key={cat} value={cat} className="capitalize">{cat}</SelectItem>
+                        <SelectItem key={cat} value={cat} className="capitalize text-xs">{cat}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                  <Button size="sm" onClick={handleAddRedaction} disabled={createRedaction.isPending} className="h-8 px-3">
+                  <Button size="sm" onClick={handleAddRedaction} disabled={createRedaction.isPending} className="h-8 px-3 bg-[#6B1E2B] text-white hover:bg-[#7D2334]">
                     Add
                   </Button>
-                  <Button size="sm" variant="ghost" onClick={() => setSelection(null)} className="h-8 px-2">
+                  <Button size="sm" variant="ghost" onClick={() => setSelection(null)} className="h-8 px-2 text-[#666666]">
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
@@ -422,113 +416,114 @@ export default function ReviewWorkspace() {
         </main>
 
         {/* Sidebar */}
-        <aside className="w-[400px] border-l bg-sidebar flex flex-col shrink-0 shadow-[-4px_0_15px_-3px_rgba(0,0,0,0.05)] z-10">
-          <div className="flex p-3 gap-1.5 border-b bg-muted/30">
+        <aside className="w-[380px] border-l border-[#E5DDD2] bg-[#FAF7F2] flex flex-col shadow-[-4px_0_20px_rgba(0,0,0,0.04)] z-10">
+          <div className="flex gap-1 p-2 border-b border-[#E5DDD2]">
             <button 
-              className={`flex-1 py-2 text-xs font-semibold rounded-md transition-colors ${activeTab === 'pending' ? 'bg-background text-foreground shadow-sm border' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${activeTab === 'pending' ? 'bg-[#FFFDF9] border border-[#E5DDD2] shadow-sm text-[#1E1E1E]' : 'text-[#888888] hover:bg-white/50'}`}
               onClick={() => setActiveTab('pending')}
             >
-              Review <span className="ml-1 bg-status-pending/20 text-status-pending px-1.5 py-0.5 rounded-full">{pendingRedactions.length}</span>
+              Review ({pendingRedactions.length})
             </button>
             <button 
-              className={`flex-1 py-2 text-xs font-semibold rounded-md transition-colors ${activeTab === 'confirmed' ? 'bg-status-confirmed/10 text-status-confirmed shadow-sm border border-status-confirmed/20' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${activeTab === 'confirmed' ? 'bg-[#FFFDF9] border border-[#E5DDD2] shadow-sm text-[#1E1E1E]' : 'text-[#888888] hover:bg-white/50'}`}
               onClick={() => setActiveTab('confirmed')}
             >
-              Conf <span className="ml-1 opacity-70">{confirmed.length}</span>
+              Conf ({confirmed.length})
             </button>
             <button 
-              className={`flex-1 py-2 text-xs font-semibold rounded-md transition-colors ${activeTab === 'rejected' ? 'bg-status-rejected/10 text-status-rejected shadow-sm border border-status-rejected/20' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${activeTab === 'rejected' ? 'bg-[#FFFDF9] border border-[#E5DDD2] shadow-sm text-[#1E1E1E]' : 'text-[#888888] hover:bg-white/50'}`}
               onClick={() => setActiveTab('rejected')}
             >
-              Rej <span className="ml-1 opacity-70">{rejected.length}</span>
+              Rej ({rejected.length})
             </button>
             <button 
-              className={`flex-1 py-2 text-xs font-semibold rounded-md transition-colors ${activeTab === 'user' ? 'bg-status-user/10 text-status-user shadow-sm border border-status-user/20' : 'text-muted-foreground hover:bg-muted'}`}
+              className={`flex-1 px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${activeTab === 'user' ? 'bg-[#FFFDF9] border border-[#E5DDD2] shadow-sm text-[#1E1E1E]' : 'text-[#888888] hover:bg-white/50'}`}
               onClick={() => setActiveTab('user')}
             >
-              Added <span className="ml-1 opacity-70">{userAdded.length}</span>
+              Added ({userAdded.length})
             </button>
           </div>
           
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {activeList.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-center text-muted-foreground">
-                <Check className="h-10 w-10 text-muted/50 mb-3" />
-                <p className="text-sm font-medium">All clear</p>
-                <p className="text-xs mt-1">No items in this category.</p>
-              </div>
-            ) : (
-              activeList.map(r => (
-                <div 
-                  key={r.id} 
-                  className={`
-                    border rounded-xl p-3.5 text-sm transition-all duration-200 cursor-pointer group
-                    ${selectedRedactionId === r.id ? 'border-primary shadow-md bg-primary/5 scale-[1.02]' : 'bg-card hover:border-border hover:shadow-sm'}
-                  `}
-                  onClick={() => {
-                    setSelectedRedactionId(r.id);
-                    document.getElementById(`redaction-${r.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                  }}
-                >
-                  <div className="flex items-start justify-between mb-3 relative">
-                    <span className="font-mono bg-muted px-2 py-1 rounded-md text-xs font-medium text-foreground line-clamp-2 leading-relaxed" title={r.text}>
-                      {r.text}
-                    </span>
-                    <Badge variant="outline" className={`capitalize text-[10px] shrink-0 ml-2 ${r.source === 'user' ? 'border-status-user text-status-user' : ''}`}>
-                      {r.category}
-                    </Badge>
-                  </div>
-                  
-                  {activeTab === "pending" && (
-                    <div className="flex gap-2 mt-4 pt-3 border-t">
-                      <Button 
-                        size="sm" 
-                        className="flex-1 bg-status-confirmed hover:bg-status-confirmed/90 text-white font-medium" 
-                        onClick={(e) => { e.stopPropagation(); handleStatusChange(r.id, "confirmed"); }}
-                      >
-                        <Check className="h-4 w-4 mr-1.5" /> Confirm
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="outline" 
-                        className="flex-1 text-muted-foreground hover:text-status-rejected hover:border-status-rejected" 
-                        onClick={(e) => { e.stopPropagation(); handleStatusChange(r.id, "rejected"); }}
-                      >
-                        <X className="h-4 w-4 mr-1.5" /> Reject
-                      </Button>
-                    </div>
-                  )}
-                  
-                  {activeTab !== "pending" && (
-                    <div className="flex justify-between items-center mt-3 pt-3 border-t text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Eye className="h-3 w-3" /> Reviewed
+            <AnimatePresence>
+              {activeList.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center text-center text-[#888888]">
+                  <Check className="h-10 w-10 opacity-50 mb-3" />
+                  <p className="text-sm font-medium">All clear</p>
+                </div>
+              ) : (
+                activeList.map(r => (
+                  <motion.div 
+                    key={r.id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    whileHover={{ y: -1 }}
+                    className={`
+                      bg-[#FFFDF9] border border-[#E5DDD2] rounded-xl p-4 cursor-pointer
+                      ${selectedRedactionId === r.id ? 'border-[#6B1E2B] ring-1 ring-[#6B1E2B]/30' : ''}
+                    `}
+                    onClick={() => {
+                      setSelectedRedactionId(r.id);
+                      window.document.getElementById(`redaction-${r.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="font-mono text-xs bg-[#F5F1EA] px-2 py-1 rounded-md text-[#1E1E1E] line-clamp-2">
+                        {r.text}
                       </span>
-                      <div className="flex items-center gap-2">
-                        {r.source === 'user' && (
+                      <span className="text-[10px] uppercase tracking-wider border rounded-full px-2 py-0.5 text-[#666666]">
+                        {r.category}
+                      </span>
+                    </div>
+
+                    {r.source === 'ai' && (
+                      <div className="h-1.5 rounded-full bg-[#E5DDD2] w-full overflow-hidden mt-2 mb-3">
+                        <div className={`h-full ${r.status === 'pending' ? 'bg-amber-400' : r.status === 'confirmed' ? 'bg-[#4C7A53]' : 'bg-gray-400'}`} style={{ width: `${r.confidence * 100}%` }} />
+                      </div>
+                    )}
+                    
+                    {activeTab === "pending" && (
+                      <div className="flex gap-2 mt-2">
+                        <Button 
+                          size="sm" 
+                          className="flex-1 bg-[#4C7A53] hover:bg-[#3d6343] text-white text-xs h-8" 
+                          onClick={(e) => { e.stopPropagation(); handleStatusChange(r.id, "confirmed"); }}
+                        >
+                          <Check className="h-3 w-3 mr-1" /> Confirm
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="flex-1 border border-[#E5DDD2] text-[#666666] hover:border-[#A92B2B] hover:text-[#A92B2B] text-xs h-8" 
+                          onClick={(e) => { e.stopPropagation(); handleStatusChange(r.id, "rejected"); }}
+                        >
+                          <X className="h-3 w-3 mr-1" /> Reject
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {activeTab !== "pending" && (
+                      <div className="flex justify-between items-center mt-2 pt-2 border-t border-[#E5DDD2] text-xs text-[#888888]">
+                        <span className="flex items-center gap-1">
+                          <Eye className="h-3 w-3" /> Reviewed
+                        </span>
+                        <div className="flex items-center gap-2">
                           <Button 
-                            size="sm" 
                             variant="ghost" 
-                            className="h-6 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                            size="icon" 
+                            className="h-6 w-6 hover:text-[#A92B2B]"
                             onClick={(e) => { e.stopPropagation(); handleDeleteRedaction(r.id); }}
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
-                        )}
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="h-6 px-2 text-xs"
-                          onClick={(e) => { e.stopPropagation(); handleStatusChange(r.id, "pending"); }}
-                        >
-                          Undo
-                        </Button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
+                    )}
+                  </motion.div>
+                ))
+              )}
+            </AnimatePresence>
           </div>
         </aside>
       </div>
