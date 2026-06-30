@@ -545,7 +545,7 @@ export default function ReviewWorkspace() {
                           );
                         }
 
-                        // Apply styles for HTML elements from mammoth
+                        // Apply styles for HTML elements from mammoth + PDF pre-block
                         return `<style>
                           .doc-html-viewer p { margin-bottom: 0.75em; }
                           .doc-html-viewer h1, .doc-html-viewer h2, .doc-html-viewer h3 { font-weight: bold; margin: 1.2em 0 0.4em; }
@@ -558,6 +558,17 @@ export default function ReviewWorkspace() {
                           .doc-html-viewer ul, .doc-html-viewer ol { padding-left: 1.5em; margin: 0.5em 0; }
                           .doc-html-viewer li { margin-bottom: 0.25em; }
                           .doc-html-viewer mark { background: unset; }
+                          .doc-html-viewer .pdf-content pre {
+                            white-space: pre-wrap;
+                            font-family: 'Georgia', serif;
+                            font-size: 15px;
+                            line-height: 1.8;
+                            color: #1F1F1F;
+                            background: transparent;
+                            border: none;
+                            padding: 0;
+                            margin: 0;
+                          }
                         </style>${html}`;
                       })()
                     }}
