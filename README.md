@@ -1,120 +1,399 @@
-# Redact Review: Multi-Engine AI Privacy & PII Redaction
+<div align="center">
 
-**Live Deployment Link:** [https://redactreview.onrender.com/](https://redactreview.onrender.com/)
+<img src="logo.png" alt="Redact Review Logo" width="120" />
 
-Redact Review is an enterprise-grade document redaction platform built for the absolute privacy requirements of the legal and healthcare sectors. By utilizing a **Triple-Engine AI Consensus Framework**, the system identifies and redacts Personally Identifiable Information (PII) with deterministic extraction, semantic context mapping, and multi-model consensus arbitration, completely eliminating the liabilities associated with single-engine AI false negatives.
+# Redact Review
+
+### Enterprise-Grade AI-Powered PII Redaction Platform
+
+**Multi-model consensus detection · Rich document preservation · Secure PDF export**
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-redactreview.onrender.com-6B1E2B?style=for-the-badge&logo=render)](https://redactreview.onrender.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-22-339933?style=for-the-badge&logo=node.js)](https://nodejs.org/)
+
+</div>
 
 ---
 
-## 🏗️ System Architecture
+## ✨ What is Redact Review?
 
-```mermaid
-graph TD
-    subgraph Client [Frontend - React / Tailwind]
-        UI[Consensus Review Workspace]
-        Dash[Dashboard & Risk Scoring]
-        Landing[Premium Enterprise Landing]
-    end
+**Redact Review** is an enterprise-grade document redaction platform that uses **three AI models simultaneously** to detect Personally Identifiable Information (PII). Unlike single-model approaches, Redact Review applies a **consensus algorithm**—an entity is flagged with high confidence only when multiple models agree, dramatically reducing false positives and catching more PII that a single model might miss.
 
-    subgraph API [Backend - Node.js / Express]
-        UploadRoute[Document Upload & Parsing]
-        ExportRoute[Secure PDF Generation & Redaction]
-        RedactRoute[Redaction Management API]
-    end
+Built for legal teams, compliance officers, and data protection workflows, Redact Review delivers:
 
-    subgraph ConsensusEngine [AI Triple-Engine Detection]
-        E1[ENGINE_01: Pattern/Regex]
-        E2[ENGINE_02: Context/Semantic]
-        E3[ENGINE_03: Arbiter/Consensus]
-        
-        E1 --> E3
-        E2 --> E3
-    end
+- 🧠 **Triple AI Consensus** — Gemini 2.5 Flash + Llama 3.3 70B + Claude 3 Haiku, all running in parallel
+- 📄 **Rich Document Fidelity** — Upload a `.docx` and see it rendered exactly as formatted (tables, headings, bold text, lists)
+- 🔍 **Human-in-the-Loop Review** — Accept, reject, or ignore every AI suggestion with full audit trail
+- 🔒 **Secure PDF Export** — Generate a permanently redacted PDF with all PII replaced by black bars
+- 📊 **Intelligence Dashboard** — Real-time risk scoring, compliance checklists, and blind-spot analysis
 
-    subgraph Storage [Supabase / PostgreSQL]
-        DB[(Drizzle ORM + PG)]
-        FileStore[Cloud Blob Storage]
-    end
+---
 
-    UI --> UploadRoute
-    Dash --> RedactRoute
-    UploadRoute --> ConsensusEngine
-    ConsensusEngine --> DB
-    UploadRoute --> FileStore
-    RedactRoute --> DB
-    UI --> ExportRoute
-    ExportRoute --> DB
-    ExportRoute --> FileStore
+## 🚀 Live Demo
+
+> **URL:** [https://redactreview.onrender.com](https://redactreview.onrender.com)
+
+For quick evaluator access, use the pre-configured demo account:
+
+| Field | Value |
+|-------|-------|
+| **Email** | `harinin006@gmail.com` |
+| **Password** | `Harini@0504` |
+
+Or click **"Quick Login as Evaluator"** on the login page.
+
+---
+
+## 🏗️ Architecture Overview
+
+```
+SprintFour/
+├── artifacts/
+│   ├── api-server/          # Express.js REST API (Node 22, TypeScript)
+│   │   └── src/
+│   │       ├── lib/
+│   │       │   └── detector.ts       # Triple-model AI consensus engine
+│   │       └── routes/
+│   │           ├── documents.ts      # CRUD + file processing
+│   │           ├── upload.ts         # Mammoth DOCX → HTML extraction
+│   │           ├── redactions.ts     # Redaction CRUD & status management
+│   │           ├── intelligence.ts   # Risk scoring & compliance analytics
+│   │           ├── blind-spots.ts    # Uncovered PII occurrence finder
+│   │           ├── suspicious.ts     # Regex-based PII pattern scanner
+│   │           ├── safety-scan.ts    # Post-redaction AI verification scan
+│   │           ├── export.ts         # PDF generation with redaction overlays
+│   │           └── auditor.ts        # AI-powered review auditor widget
+│   │
+│   └── redact-review/       # Vite + React 19 frontend (TypeScript)
+│       └── src/
+│           ├── pages/
+│           │   ├── landing.tsx        # Marketing landing page
+│           │   ├── login.tsx          # Authentication
+│           │   ├── register.tsx       # User registration
+│           │   ├── dashboard.tsx      # Document management hub
+│           │   ├── review-workspace.tsx  # Core redaction editor
+│           │   ├── intelligence.tsx   # Analytics & risk reporting
+│           │   └── review-complete.tsx   # Post-review summary
+│           └── components/
+│               ├── AIAuditorWidget.tsx    # Floating AI review assistant
+│               ├── CompleteReviewModal.tsx
+│               ├── review/
+│               │   ├── ReviewSidebar.tsx
+│               │   ├── EntityDetailPanel.tsx
+│               │   ├── PDFViewer.tsx
+│               │   └── RemainingRiskBanner.tsx
+│               └── ui/               # shadcn/ui component library
+│
+└── lib/
+    ├── api-client-react/    # Auto-generated React Query hooks
+    ├── api-spec/            # OpenAPI specification
+    ├── api-zod/             # Zod validation schemas
+    └── db/                  # Supabase client (PostgreSQL)
 ```
 
 ---
 
-## ✨ Key Features & The Consensus Methodology
+## 🧠 Core Feature: Triple-Model Consensus Detection
 
-### 1. Triple-Engine AI Consensus
-We don't rely on one viewpoint. The platform utilizes multiple detection mechanisms working in tandem:
-- **ENGINE_01 (Pattern):** Deterministic extraction using high-speed regex and structural analysis for strict formats (SSN, IBAN, Tax IDs).
-- **ENGINE_02 (Context):** Semantic Mapping that analyzes surrounding language and prose to identify entities hidden in unstructured text.
-- **ENGINE_03 (Arbiter):** Aggregates Engine 1 and 2, flagging discrepancies for human validation via "Second Opinion" smart alerts.
+The heart of Redact Review is the **consensus detection engine** (`detector.ts`). When a document is uploaded, it fires three AI models **simultaneously** in parallel:
 
-### 2. The Review Workspace ("Digital Paper" UX)
-A highly polished, evaluator-focused review environment tailored for legal and medical reviewers. 
-- **Side-by-side consensus mapping** and a **Privacy Readiness Score** ensuring documents only export when fully sanitized.
-- **Severity Engine:** Calculates a risk-velocity score based on PII density, allowing reviewers to prioritize high-risk documents instantly.
+| Model | Provider | Role |
+|-------|----------|------|
+| **Gemini 2.5 Flash** | Google | Fast, high-recall PII extraction |
+| **Llama 3.3 70B** | Groq (fast inference) | Large context, nuanced understanding |
+| **Claude 3 Haiku** | Anthropic via OpenRouter | Conservative, precise detection |
 
-### 3. Absolute PDF Redaction (Zero-Leak Generation)
-The export engine doesn't just overlay visual blockers; it structurally alters the document:
-- Modifies `.docx` files by explicitly stripping out the sensitive text spans.
-- Converts to PDF with exact positional `bounding_boxes`, rendering `rgb(0,0,0)` redaction rectangles directly into the document layer while completely omitting the sensitive text strings from the underlying PDF text stream.
+Each model returns a list of PII spans `{ text, category }`. The engine then:
 
----
+1. **Maps all detections to character offsets** in the original document text
+2. **Groups overlapping spans** and counts how many models flagged each
+3. **Calculates confidence** as `count / 3` (0.33 = 1 model, 0.66 = 2 models, 1.0 = all 3)
+4. **Stores a consensus note** `{"count": 2, "models": [0,1], ...}` alongside each redaction
 
-## 🛠️ Technical Stack
-
-**Frontend:**
-- **Framework:** React 18 / Vite
-- **Styling:** Tailwind CSS (Custom Modern Corporate Aesthetic), Framer Motion for micro-interactions.
-- **Routing:** Wouter / React Router
-- **Component System:** Headless UI integrations + Lucide Icons.
-
-**Backend:**
-- **Runtime:** Node.js (v22/v26 environment support) / Express
-- **PDF Generation:** `pdf-lib` for immutable document alterations and absolute positional geometry calculations.
-- **Document Parsing:** `mammoth` for DOCX content extraction and positional mapping.
-
-**Database & Cloud:**
-- **Database:** Supabase (PostgreSQL)
-- **ORM:** Drizzle ORM (Type-safe schema definitions for `documents`, `redactions`, `audit_reports`)
-- **Hosting:** Render (Automated CI/CD deployment pipelines)
+In the UI, this translates to:
+- 🔴 **Critical** (all 3 models agree) — shown in red with high prominence
+- 🟠 **Second Opinion** (1 model only) — flagged in orange for careful human review
+- ✅ **Consensus** (2–3 models) — displayed with green confidence indicator
 
 ---
 
-## 🎨 Design Philosophy
-The brand personality is authoritative, secure, and precise. Built with a **Modern Corporate** aesthetic:
-- **Color Palette:** Anchored by Oxblood Maroon (`#800000`) and Paper White (`#fff8f5`) to provide a professional, eye-strain-free canvas for long review sessions.
-- **Typography:** **Inter** for dense, legible tabular data and UI layouts, paired with **JetBrains Mono** for PII entities, regex patterns, and exact metadata, cleanly distinguishing "system data" from "human text."
-- **Depth & Shape:** Tonal layering for depth (omitting heavy drop-shadows), alongside subtle 4px borders mapping to a structured architectural feel.
+## 📄 Document Rendering: Preserving Formatting
+
+Redact Review uses a **dual-storage strategy** to ensure DOCX files look exactly as uploaded while still being searchable by the AI engine.
+
+When a `.docx` is uploaded, the server:
+1. Converts it to HTML using **Mammoth** (`mammoth.convertToHtml`)
+2. Sanitizes the HTML (removes scripts, event handlers)
+3. Extracts **plain text** from the HTML (offset-stable, for AI detection)
+4. Stores both in the database as a JSON envelope:
+
+```json
+{ "v": 1, "plain": "Employment Agreement...", "html": "<h1>Employment Agreement...</h1>" }
+```
+
+At read time, `decodeContent()` splits them apart:
+- The **plain text** is used for all AI detection and offset calculations
+- The **HTML** is rendered in the review workspace using `dangerouslySetInnerHTML`
+- PII highlights are **injected directly** into the HTML string before rendering
+
+This approach required **no database schema changes** and is fully backward-compatible with plain text and PDF documents.
 
 ---
 
-## 🚀 Getting Started Locally
+## 🎨 Key Pages & UI Features
 
+### 🏠 Landing Page (`/`)
+Premium marketing page with scroll-driven animations (Framer Motion), glassmorphic hero section, feature grid, and an interactive document preview demonstrating the redaction workflow.
+
+### 📊 Dashboard (`/dashboard`)
+- Upload new documents (`.docx`, `.txt`, `.pdf`, `.md`)
+- See redaction statistics per document (pending / confirmed / rejected)
+- View document processing status
+- One-click access to the review workspace
+
+### ✏️ Review Workspace (`/review/:id`)
+The most feature-rich part of the product:
+
+| Feature | Description |
+|---------|-------------|
+| **Three view modes** | Original (live highlights) → Reviewed (black tape overlay) → Export (block preview) |
+| **Interactive highlights** | Click any highlighted span to select it; color-coded by severity |
+| **Sidebar review queue** | Tab-split between Pending / Confirmed / Rejected / User-added |
+| **Entity detail panel** | Slide-in panel showing all occurrences of the same entity across the document |
+| **Manual selection** | Highlight any text, pick a PII category, instantly add a redaction |
+| **Keyboard shortcuts** | `J/K` to navigate, `R` to redact, `I` to ignore, `⌘Z` to undo |
+| **Blind-spot detection** | Finds every other occurrence of confirmed PII that hasn't been redacted yet |
+| **AI Auditor widget** | Floating assistant that proactively flags risky patterns |
+| **Final safety scan** | Post-review AI check to catch anything missed before export |
+
+### 📈 Intelligence Report (`/intelligence/:id`)
+- **Privacy Risk Score** (0–100) calculated from remaining unresolved PII severity
+- Compliance checklist (GDPR-style categories)
+- Category breakdown with severity weighting
+- Disputed entity analysis (second-opinion flags)
+
+### 📥 Secure PDF Export
+- For DOCX/TXT documents: generates a clean PDF with black rectangle overlays over every confirmed PII span
+- For original PDFs: applies bounding-box coordinates to the original PDF pages
+- Filename: `<document_title>_REDACTED.pdf`
+
+---
+
+## 🛠️ Tech Stack
+
+### Frontend
+| Technology | Purpose |
+|-----------|---------|
+| **React 19** | UI framework |
+| **Vite 7** | Build tool & dev server |
+| **TypeScript 5.9** | Type safety |
+| **Framer Motion** | Animations & transitions |
+| **TanStack Query v5** | Server state & data fetching |
+| **Wouter** | Lightweight client-side routing |
+| **shadcn/ui + Radix UI** | Accessible component library |
+| **Lucide React** | Icon set |
+| **Sonner** | Toast notifications |
+
+### Backend
+| Technology | Purpose |
+|-----------|---------|
+| **Node.js 22 + Express** | REST API server |
+| **TypeScript** | Type-safe server code |
+| **Supabase (PostgreSQL)** | Database & authentication |
+| **Mammoth** | DOCX → HTML conversion |
+| **pdf-parse** | PDF text extraction |
+| **pdf-lib** | PDF generation & redaction overlays |
+| **Multer** | File upload handling |
+| **Zod** | Runtime schema validation |
+| **Pino** | Structured JSON logging |
+
+### AI / LLM Providers
+| Provider | Model | Role |
+|----------|-------|------|
+| **Google AI** | `gemini-2.5-flash` | Primary PII detection + safety scan |
+| **Groq** | `llama-3.3-70b-versatile` | Secondary detection (ultra-fast inference) |
+| **OpenRouter** | `anthropic/claude-3-haiku` | Third detection + auditor |
+
+### Monorepo
+| Tool | Purpose |
+|------|---------|
+| **pnpm workspaces** | Monorepo package management |
+| **tsconfig references** | Shared TypeScript project references |
+| **Supply-chain protection** | `minimumReleaseAge: 1440` (24hr delay for new npm packages) |
+
+---
+
+## ⚙️ Local Development Setup
+
+### Prerequisites
+- Node.js 22+
+- pnpm 9+
+- A Supabase project (PostgreSQL)
+
+### 1. Clone & Install
 ```bash
-# Clone the repository
-git clone https://github.com/your-username/SprintFour.git
-cd SprintFour
-
-# Install dependencies (Monorepo)
+git clone https://github.com/harininr/Sprintfour.git
+cd Sprintfour
 pnpm install
-
-# Setup Environment Variables (.env)
-VITE_SUPABASE_URL=...
-SUPABASE_SERVICE_ROLE_KEY=...
-
-# Start the local development servers (Frontend & Backend)
-pnpm -C artifacts/api-server run build
-node artifacts/api-server/dist/index.mjs &
-pnpm -C artifacts/redact-review run dev
 ```
 
-*Designed and developed to guarantee that your most critical data remains secure.*
+### 2. Environment Variables
+Create a `.env` file in the root:
+```env
+# Supabase
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# AI Providers
+GEMINI_API_KEY=your_gemini_api_key
+GROQ_API_KEY=your_groq_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+```
+
+### 3. Database Schema
+In your Supabase project, create the required tables:
+
+```sql
+-- Documents table
+CREATE TABLE documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  status TEXT DEFAULT 'uploaded',
+  file_path TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ
+);
+
+-- Redactions table
+CREATE TABLE redactions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+  start_offset INTEGER NOT NULL,
+  end_offset INTEGER NOT NULL,
+  text TEXT NOT NULL,
+  category TEXT NOT NULL,
+  confidence FLOAT,
+  status TEXT DEFAULT 'pending',
+  source TEXT DEFAULT 'ai',
+  bounding_boxes TEXT,
+  note TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ
+);
+```
+
+### 4. Start the Development Servers
+```bash
+# Build the API server
+cd artifacts/api-server && npm run build && cd ../..
+
+# Start both servers concurrently
+PORT=3001 node artifacts/api-server/dist/index.mjs &
+VITE_API_URL=http://localhost:3001 pnpm --filter @workspace/redact-review run dev
+```
+
+Or use the included start script:
+```bash
+bash start.sh
+```
+
+The frontend will be available at **http://localhost:5173** and the API at **http://localhost:3001**.
+
+---
+
+## 🔌 API Reference
+
+All endpoints are prefixed with `/api`.
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/documents` | List all documents with redaction stats |
+| `POST` | `/documents` | Create a document & trigger AI detection |
+| `GET` | `/documents/:id` | Get document with all redactions |
+| `DELETE` | `/documents/:id` | Delete document |
+| `POST` | `/documents/upload` | Upload a file, extract text & HTML |
+| `GET` | `/documents/:id/intelligence` | Risk score & compliance analytics |
+| `GET` | `/documents/:id/blind-spots` | Find unredacted occurrences of confirmed PII |
+| `GET` | `/documents/:id/suspicious` | Regex-based PII pattern scan |
+| `POST` | `/documents/:id/safety-scan` | Post-review AI verification scan |
+| `GET` | `/documents/:id/export-redacted` | Download redacted PDF |
+| `GET` | `/redactions/:id` | Get single redaction |
+| `PATCH` | `/redactions/:id` | Update redaction status / category |
+| `POST` | `/redactions` | Create manual redaction |
+| `DELETE` | `/redactions/:id` | Delete redaction |
+
+---
+
+## 📁 Supported File Types
+
+| Format | Extension | Processing |
+|--------|-----------|-----------|
+| Word Document | `.docx`, `.doc` | Mammoth → Rich HTML + Plain Text |
+| Plain Text | `.txt`, `.text` | Direct text extraction |
+| Markdown | `.md` | Direct text extraction |
+| PDF | `.pdf` | pdf-parse extraction + bounding box redaction |
+
+**Max file size:** 20 MB
+
+---
+
+## 🔐 Security & Privacy
+
+- **Supply-chain protection**: All npm packages must be published for ≥24 hours before installation
+- **HTML sanitization**: Mammoth output is stripped of `<script>`, `<style>`, and all event handlers before storage or rendering
+- **No cloud file storage**: Uploaded files are processed in-memory or transiently on disk; only extracted text is persisted to the database
+- **Irreversible redaction**: Exported PDFs use opaque black rectangles directly overlaying the text layer — not just visual styling that can be removed
+
+---
+
+## 🎯 PII Categories Detected
+
+| Category | Severity | Examples |
+|----------|----------|---------|
+| SSN | 🔴 Critical | Social Security Numbers |
+| Financial | 🔴 Critical | Credit cards, bank accounts, financial IDs |
+| Medical | 🟠 High | Medical record numbers, diagnoses |
+| Phone | 🟠 High | Phone numbers, fax numbers |
+| Date of Birth | 🟠 High | DOBs in any date format |
+| Address | 🟡 Medium | Street addresses, ZIP codes |
+| Email | 🟡 Medium | Email addresses |
+| Name | 🟢 Low | Personal names |
+| Organization | 🟢 Low | Company/institution names |
+| Other | 🟢 Low | Miscellaneous PII |
+
+---
+
+## 🗺️ Project Roadmap
+
+- [ ] Role-based access control (Reviewer / Approver / Admin)
+- [ ] Batch document processing
+- [ ] Custom PII rules & regex patterns
+- [ ] GDPR / HIPAA compliance report export
+- [ ] Redaction history & rollback
+- [ ] Webhook notifications on review completion
+- [ ] On-premise deployment support
+
+---
+
+## 🤝 Contributing
+
+This project was built as part of **Sprint Four**. Contributions, issues, and feedback are welcome via GitHub Issues and Pull Requests.
+
+---
+
+## 📄 License
+
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+Built with ❤️ by **Harini N R**
+
+[Live Demo](https://redactreview.onrender.com) · [GitHub](https://github.com/harininr/Sprintfour) · [Report a Bug](https://github.com/harininr/Sprintfour/issues)
+
+</div>
