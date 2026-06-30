@@ -199,7 +199,7 @@ router.get("/documents/:id/export-redacted", async (req, res): Promise<void> => 
     let cursorY = page.getHeight() - margin;
 
     const activeRedactions = (redactions || []).filter(r => r.start_offset != null && r.end_offset != null);
-    const sorted = [...activeRedactions].sort((a, b) => a.start_offset! - b.start_offset!);
+    const sorted = [...activeRedactions].sort((a, b) => Number(a.start_offset) - Number(b.start_offset));
 
     let lastIdx = 0;
     const contentStr = doc.content || "";
@@ -219,21 +219,19 @@ router.get("/documents/:id/export-redacted", async (req, res): Promise<void> => 
       const tokens = text.split(/([ \n])/); // keep spaces and newlines as tokens
       for (const token of tokens) {
         if (!token) continue;
-        if (token === ' ' || token === '\n') {
-          if (token === '\n') {
-            cursorX = margin;
-            cursorY -= lineHeight;
-            if (cursorY < margin) {
-              page = pdfDoc.addPage();
-              cursorY = page.getHeight() - margin;
-            }
-          } else {
-             const w = font.widthOfTextAtSize(' ', fontSize);
-             if (isRedacted) {
-                page.drawRectangle({ x: cursorX, y: cursorY - 3, width: w + 1, height: fontSize + 4, color: rgb(0.1, 0.1, 0.1) });
-             }
-             cursorX += w;
+        if (token === '\n') {
+          cursorX = margin;
+          cursorY -= lineHeight;
+          if (cursorY < margin) {
+            page = pdfDoc.addPage();
+            cursorY = page.getHeight() - margin;
           }
+        } else if (token === ' ') {
+          const w = font.widthOfTextAtSize(' ', fontSize);
+          if (isRedacted) {
+            page.drawRectangle({ x: cursorX, y: cursorY - 3, width: w + 1, height: fontSize + 4, color: rgb(0, 0, 0) });
+          }
+          cursorX += w;
         } else {
           const safeToken = cleanToken(token);
           let w = 0;
@@ -248,9 +246,10 @@ router.get("/documents/:id/export-redacted", async (req, res): Promise<void> => 
             }
           }
           if (isRedacted) {
-            page.drawRectangle({ x: cursorX, y: cursorY - 3, width: w + 1, height: fontSize + 4, color: rgb(0.1, 0.1, 0.1) });
+            // Draw a black rectangle over the text area
+            page.drawRectangle({ x: cursorX, y: cursorY - 3, width: w + 1, height: fontSize + 4, color: rgb(0, 0, 0) });
           } else {
-            page.drawText(safeToken, { x: cursorX, y: cursorY, size: fontSize, font: font, color: rgb(0.1, 0.1, 0.1) });
+            page.drawText(safeToken, { x: cursorX, y: cursorY, size: fontSize, font: font, color: rgb(0, 0, 0) });
           }
           cursorX += w;
         }
@@ -258,12 +257,22 @@ router.get("/documents/:id/export-redacted", async (req, res): Promise<void> => 
     };
 
     for (const r of sorted) {
-      if (r.start_offset! > lastIdx) {
-        processChunk(contentStr.substring(lastIdx, r.start_offset!), false);
+      const start = Number(r.start_offset);
+      const end = Number(r.end_offset);
+      
+      if (start > lastIdx) {
+        processChunk(contentStr.substring(lastIdx, start), false);
       }
-      processChunk(contentStr.substring(r.start_offset!, r.end_offset!), true);
-      lastIdx = r.end_offset!;
+      
+      const chunkStart = Math.max(lastIdx, start);
+      if (end > chunkStart) {
+        // Redact this chunk
+        processChunk(contentStr.substring(chunkStart, end), true);
+      }
+      
+      lastIdx = Math.max(lastIdx, end);
     }
+    
     if (lastIdx < contentStr.length) {
       processChunk(contentStr.substring(lastIdx), false);
     }
