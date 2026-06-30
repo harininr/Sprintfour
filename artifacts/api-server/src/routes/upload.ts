@@ -44,6 +44,7 @@ router.post(
     try {
       if (ext === ".pdf" || mimetype === "application/pdf") {
         // Lazy-import pdf-parse so its side-effects don't slow startup
+        // @ts-ignore: No types available for the inner file
         const pdfParseRaw = await import("pdf-parse/lib/pdf-parse.js") as any;
         const pdfParse = pdfParseRaw.default || pdfParseRaw;
         const result = await pdfParse(buffer);
