@@ -117,7 +117,7 @@ export function sortReviewQueue(redactions: any[]): any[] {
 }
 
 // ─── Context Extractor ────────────────────────────────────────────────────────
-export function extractContext(content: string, startOffset: number, endOffset: number, chars = 200): string {
+export function extractContext(content: string, startOffset: number, endOffset: number, chars = 200): { before: string; after: string } {
   const before = content.slice(Math.max(0, startOffset - chars), startOffset);
   const after  = content.slice(endOffset, Math.min(content.length, endOffset + chars));
   return { before, after };
