@@ -13,6 +13,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isAutoLoggingIn, setIsAutoLoggingIn] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +29,18 @@ export default function Login() {
       toast.success("Welcome back!");
       setLocation("/dashboard");
     }, 1200);
+  };
+
+  const handleAutoLogin = () => {
+    setIsAutoLoggingIn(true);
+    setEmail("harinin006@gmail.com");
+    setPassword("Harini@0504");
+    setTimeout(() => {
+      login({ id: "usr_mock_123", name: "Evaluator", email: "harinin006@gmail.com" });
+      setIsAutoLoggingIn(false);
+      toast.success("Welcome back, Evaluator!");
+      setLocation("/dashboard");
+    }, 800);
   };
 
   return (
@@ -90,14 +103,47 @@ export default function Login() {
 
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isAutoLoggingIn}
               className="w-full h-[52px] bg-[#1e1b18] text-white hover:bg-black rounded-xl shadow-lg shadow-black/5 font-semibold text-[15px] transition-all hover:scale-[1.02]"
             >
               {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Sign in"}
             </Button>
           </form>
 
-          <div className="mt-10 text-center">
+          <div className="relative mt-8 mb-8">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-[#e2bfb9]"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-4 bg-white text-[#5a413d] font-medium">For Evaluators</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleAutoLogin}
+            disabled={isLoading || isAutoLoggingIn}
+            className="w-full h-[52px] bg-[#fff8f5] border border-[#800000]/20 text-[#800000] hover:bg-[#800000]/5 hover:border-[#800000]/40 rounded-xl font-bold text-[15px] transition-all flex items-center justify-center gap-2 group"
+          >
+            {isAutoLoggingIn ? <Loader2 className="h-5 w-5 animate-spin" /> : (
+              <>
+                <span className="material-symbols-outlined text-[20px] group-hover:scale-110 transition-transform">bolt</span>
+                Quick Login as Evaluator
+              </>
+            )}
+          </Button>
+
+          <div className="mt-8 text-center bg-[#fbf2ed] p-4 rounded-xl border border-[#e2bfb9]">
+            <p className="text-[13px] text-[#5a413d] font-medium">
+              Evaluator Credentials
+            </p>
+            <p className="text-[12px] text-gray-500 font-mono mt-1">
+              harinin006@gmail.com / Harini@0504
+            </p>
+          </div>
+
+          <div className="mt-8 text-center">
             <p className="text-[14px] text-gray-500">
               Don't have an account?{" "}
               <Link href="/register" className="text-[#1e1b18] font-semibold hover:text-[#800000] transition-colors cursor-pointer">
@@ -124,10 +170,10 @@ export default function Login() {
           className="relative z-10 max-w-lg text-center"
         >
           <div className="w-24 h-24 mx-auto mb-8 rounded-2xl bg-white border border-[#e2bfb9] shadow-xl flex items-center justify-center">
-             <span className="material-symbols-outlined text-[18px]">verified_user</span>
+             <span className="material-symbols-outlined text-[40px] text-[#800000]">verified_user</span>
           </div>
-          <h2 className="text-3xl font-serif font-bold text-[#1e1b18] mb-4">Enterprise-grade security, <br/> built for the modern web.</h2>
-          <p className="text-gray-600 text-lg leading-relaxed">
+          <h2 className="text-[36px] leading-[1.2] font-serif font-black text-[#1e1b18] mb-6">Enterprise-grade security, <br/> built for the modern web.</h2>
+          <p className="text-gray-600 text-[17px] leading-relaxed max-w-md mx-auto">
             Our multi-engine consensus models ensure zero false positives and absolute compliance with HIPAA and GDPR standards.
           </p>
         </motion.div>

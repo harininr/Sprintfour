@@ -138,11 +138,11 @@ export default function Register() {
           className="relative z-10 max-w-lg text-center"
         >
           <div className="w-24 h-24 mx-auto mb-8 rounded-2xl bg-white border border-[#e2bfb9] shadow-xl flex items-center justify-center">
-             <span className="material-symbols-outlined text-[18px]">verified_user</span>
+             <span className="material-symbols-outlined text-[40px] text-[#800000]">verified_user</span>
           </div>
-          <h2 className="text-3xl font-serif font-bold text-[#1e1b18] mb-4">Privacy meets intelligence.</h2>
-          <p className="text-gray-600 text-lg leading-relaxed">
-            Join the most secure platform for redacting sensitive documents. Irreversible redaction, zero trust, and maximum compliance.
+          <h2 className="text-[36px] leading-[1.2] font-serif font-black text-[#1e1b18] mb-6">Privacy meets intelligence.</h2>
+          <p className="text-gray-600 text-[17px] leading-relaxed max-w-md mx-auto">
+            Join leading organizations in securing their most sensitive data workflows with Redact Review.
           </p>
         </motion.div>
       </div>
