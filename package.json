@@ -12,6 +12,9 @@
     "prettier": "^3.8.4",
     "typescript": "~5.9.3"
   },
+  "engines": {
+    "node": "22.x"
+  },
   "pnpm": {
     "onlyBuiltDependencies": [
       "@google/genai",
