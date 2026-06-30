@@ -411,9 +411,17 @@ All endpoints are prefixed with `/api`.
 
 ---
 
+## 👩‍💻 Author & Contributors
+
+| Name | Role |
+|------|------|
+| **Harini N R** | Project Author — Full-stack design, AI integration, UI/UX |
+
+---
+
 ## 🤝 Contributing
 
-This project was built as part of **Sprint Four**. Contributions, issues, and feedback are welcome via GitHub Issues and Pull Requests.
+This project was built and authored entirely by **Harini N R** as part of **Sprint Four**. Feedback and issues are welcome via [GitHub Issues](https://github.com/harininr/Sprintfour/issues).
 
 ---
 
