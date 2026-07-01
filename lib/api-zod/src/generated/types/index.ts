@@ -7,6 +7,8 @@
  */
 
 export * from './categoryCount';
+export * from './chatRequest';
+export * from './chatResponse';
 export * from './document';
 export * from './documentDetail';
 export * from './documentDetailStatus';

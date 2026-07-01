@@ -183,9 +183,19 @@ export interface ReviewSummary {
   rejectedCount: number;
   userAddedCount: number;
   pendingCount: number;
+  /** Score from 0 to 100 representing remaining risk */
   riskScore: number;
   completionPercent: number;
   categoryBreakdown: CategoryCount[];
+}
+
+export interface ChatRequest {
+  /** The user's question */
+  prompt: string;
+}
+
+export interface ChatResponse {
+  answer: string;
 }
 
 export type SuspiciousSpanRiskLevel = typeof SuspiciousSpanRiskLevel[keyof typeof SuspiciousSpanRiskLevel];

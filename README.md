@@ -81,6 +81,63 @@ Or click **"Quick Login as Evaluator"** on the login page.
 
 ## 🏗️ Architecture Overview
 
+```mermaid
+flowchart TD
+    User(["👤 User / Reviewer"])
+
+    subgraph FE ["Frontend — React 19 + Vite + TypeScript"]
+        Landing["🏠 Landing Page"]
+        Dashboard["📋 Dashboard\n(Upload + Doc List)"]
+        Workspace["✏️ Review Workspace\n(Core Editor + Sidebar)"]
+        Intelligence["📊 Intelligence\n(Analytics + Risk)"]
+    end
+
+    subgraph API ["REST API — Express.js + Node 22"]
+        Upload["upload.ts\n(DOCX → HTML)"]
+        Docs["documents.ts\n(CRUD)"]
+        Redactions["redactions.ts\n(Confirm/Reject)"]
+        SafetyScan["safety-scan.ts\n(Final Sweep)"]
+        Chat["chat.ts\n(AI Auditor)"]
+        Export["export.ts\n(Redacted Export)"]
+    end
+
+    subgraph AI ["AI Consensus Engine"]
+        Gemini["🤖 Gemini 1.5 Flash"]
+        Groq["🦙 Groq — Llama 3.3 70B"]
+        Claude["🌐 Claude 3 Haiku\n(OpenRouter)"]
+        Consensus{{"Consensus\nAlgorithm\n(3× Runs)"}}
+        Gemini --> Consensus
+        Groq --> Consensus
+        Claude --> Consensus
+    end
+
+    subgraph Data ["Data Layer"]
+        DB[("🗄️ Supabase\nPostgreSQL\ndocuments · redactions")]
+        Mammoth["📄 Mammoth\nDOCX → rich HTML\n+ plain text"]
+    end
+
+    User --> Landing
+    User --> Dashboard
+    User --> Workspace
+    User --> Intelligence
+
+    FE -->|"API calls /api/*"| API
+
+    Upload --> Mammoth
+    Mammoth --> DB
+    Upload --> AI
+    Redactions --> DB
+    Docs --> DB
+    SafetyScan --> AI
+    Chat --> AI
+    Chat --> DB
+    Export --> DB
+
+    AI -->|"PII spans + confidence"| Docs
+```
+
+### File Structure
+
 ```
 SprintFour/
 ├── artifacts/
@@ -96,6 +153,7 @@ SprintFour/
 │   │           ├── blind-spots.ts    # Uncovered PII occurrence finder
 │   │           ├── suspicious.ts     # Regex-based PII pattern scanner
 │   │           ├── safety-scan.ts    # Post-redaction AI verification scan
+│   │           ├── chat.ts           # AI Auditor conversational chat endpoint
 │   │           ├── export.ts         # PDF generation with redaction overlays
 │   │           └── auditor.ts        # AI-powered review auditor widget
 │   │

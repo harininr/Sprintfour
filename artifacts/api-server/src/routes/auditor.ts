@@ -52,11 +52,11 @@ ${doc.content}
 
 Here are the current redactions/detections:
 ${JSON.stringify((redactions || []).map(r => ({
-  text: r.text,
-  category: r.category,
-  status: r.status,
-  ai_confidence: r.confidence
-})), null, 2)}
+    text: r.text,
+    category: r.category,
+    status: r.status,
+    ai_confidence: r.confidence
+  })), null, 2)}
 
 You must answer the user's questions about privacy, remaining risks, AI consensus, and compliance.
 Be concise, analytical, and prioritize trust and safety.`;
@@ -79,7 +79,7 @@ Be concise, analytical, and prioritize trust and safety.`;
     // We can't pre-load history easily in the new SDK without manually passing messages, 
     // but we can just append the history to the prompt if needed, or pass it in messages.
     // For simplicity with `@google/genai`, we just send the conversation as a big prompt, or use standard messages.
-    
+
     let fullPrompt = "";
     for (const msg of history) {
       fullPrompt += `${msg.role.toUpperCase()}: ${msg.content}\n\n`;

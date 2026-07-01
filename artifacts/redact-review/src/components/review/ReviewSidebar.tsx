@@ -64,7 +64,7 @@ function PrivacyReadinessGauge({ score }: { score: number }) {
           </motion.span>
         </div>
       </div>
-      <span className="text-[10px] text-[#888] text-center font-medium">Privacy<br/>Readiness</span>
+      <span className="text-[10px] text-[#888] text-center font-medium">Privacy<br />Readiness</span>
     </div>
   );
 }
@@ -80,8 +80,8 @@ export function ReviewSidebar({
 
   const activeList =
     activeTab === "pending" ? pendingList :
-    activeTab === "confirmed" ? confirmedList :
-    activeTab === "rejected" ? rejectedList : userList;
+      activeTab === "confirmed" ? confirmedList :
+        activeTab === "rejected" ? rejectedList : userList;
 
   const criticalPending = pendingList.filter(r => getSeverity(r.category) === "critical");
   const secondOpinionPending = pendingList.filter(r => isSecondOpinion(parseConsensus(r.note)));
@@ -292,7 +292,7 @@ export function ReviewSidebar({
             <div className="px-4 py-3 border-b border-[#E8DED1]">
               <ReviewTimeline currentStage={
                 pendingList.length > 0 ? "review" :
-                confirmedList.length > 0 || rejectedList.length > 0 ? "corrections" : "consensus"
+                  confirmedList.length > 0 || rejectedList.length > 0 ? "corrections" : "consensus"
               } />
             </div>
           </motion.div>
@@ -339,11 +339,10 @@ export function ReviewSidebar({
             <button
               key={tab}
               onClick={() => onTabChange(tab)}
-              className={`flex-1 px-2 py-1.5 text-[10px] font-medium rounded-lg transition-all ${
-                activeTab === tab
+              className={`flex-1 px-2 py-1.5 text-[10px] font-medium rounded-lg transition-all ${activeTab === tab
                   ? "bg-[#FFFDF9] border border-[#E8DED1] shadow-sm text-[#1F1F1F]"
                   : "text-[#888888] hover:bg-white/50"
-              }`}
+                }`}
             >
               {labels[tab]}
               <span className={`ml-1 ${activeTab === tab ? "text-[#6B1E2B] font-bold" : ""}`}>({count})</span>
@@ -353,7 +352,7 @@ export function ReviewSidebar({
       </div>
 
       {/* Entity List */}
-      <div 
+      <div
         className="flex-1 overflow-y-auto p-3 space-y-2"
         onScroll={(e) => setIsScrolled((e.target as HTMLDivElement).scrollTop > 20)}
       >
@@ -368,9 +367,9 @@ export function ReviewSidebar({
             (() => {
               const PRIORITY_GROUPS = [
                 { key: "critical", label: "Critical", categories: ["ssn", "financial", "medical", "phone", "dob"], color: "text-red-600", bg: "bg-red-50", border: "border-red-200", dot: "bg-red-500" },
-                { key: "high",     label: "High",     categories: ["address", "email"],                           color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", dot: "bg-orange-500" },
-                { key: "medium",   label: "Medium",   categories: ["name", "other"],                              color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", dot: "bg-amber-400" },
-                { key: "low",      label: "Low",      categories: ["organization"],                               color: "text-[#666]", bg: "bg-[#F5F1EA]", border: "border-[#E8DED1]", dot: "bg-gray-400" },
+                { key: "high", label: "High", categories: ["address", "email"], color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-200", dot: "bg-orange-500" },
+                { key: "medium", label: "Medium", categories: ["name", "other"], color: "text-amber-600", bg: "bg-amber-50", border: "border-amber-200", dot: "bg-amber-400" },
+                { key: "low", label: "Low", categories: ["organization"], color: "text-[#666]", bg: "bg-[#F5F1EA]", border: "border-[#E8DED1]", dot: "bg-gray-400" },
               ];
               return (
                 <div className="space-y-4">
@@ -383,9 +382,9 @@ export function ReviewSidebar({
                           <span className={`h-2 w-2 rounded-full ${group.dot} shrink-0`} />
                           <span className={`text-[10px] font-bold uppercase tracking-widest ${group.color}`}>{group.label}</span>
                           <span className={`text-[10px] font-bold ${group.color}`}>{groupItems.length}</span>
-                          
+
                           <div className="ml-auto flex gap-1 opacity-60 hover:opacity-100 transition-opacity">
-                            <Button size="sm" variant="ghost" className={`h-5 px-1.5 text-[9px] hover:bg-white/50 ${group.color}`} 
+                            <Button size="sm" variant="ghost" className={`h-5 px-1.5 text-[9px] hover:bg-white/50 ${group.color}`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 groupItems.forEach(r => onConfirm(r.id));

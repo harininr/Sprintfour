@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  ChatRequest,
+  ChatResponse,
   Document,
   DocumentDetail,
   DocumentInput,
@@ -723,6 +725,77 @@ export const useCreateRedaction = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateRedactionMutationOptions(options));
+    }
+
+export const getChatWithDocumentUrl = (id: string,) => {
+
+
+
+
+  return `/api/documents/${id}/chat`
+}
+
+/**
+ * @summary Ask the AI Auditor a question about the document and its redactions
+ */
+export const chatWithDocument = async (id: string,
+    chatRequest: ChatRequest, options?: RequestInit): Promise<ChatResponse> => {
+
+  return customFetch<ChatResponse>(getChatWithDocumentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(chatRequest)
+  }
+);}
+
+
+
+
+export const getChatWithDocumentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chatWithDocument>>, TError,{id: string;data: BodyType<ChatRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof chatWithDocument>>, TError,{id: string;data: BodyType<ChatRequest>}, TContext> => {
+
+const mutationKey = ['chatWithDocument'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof chatWithDocument>>, {id: string;data: BodyType<ChatRequest>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  chatWithDocument(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChatWithDocumentMutationResult = NonNullable<Awaited<ReturnType<typeof chatWithDocument>>>
+    export type ChatWithDocumentMutationBody = BodyType<ChatRequest>
+    export type ChatWithDocumentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Ask the AI Auditor a question about the document and its redactions
+ */
+export const useChatWithDocument = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof chatWithDocument>>, TError,{id: string;data: BodyType<ChatRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof chatWithDocument>>,
+        TError,
+        {id: string;data: BodyType<ChatRequest>},
+        TContext
+      > => {
+      return useMutation(getChatWithDocumentMutationOptions(options));
     }
 
 export const getUpdateRedactionUrl = (id: string,

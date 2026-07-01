@@ -114,7 +114,7 @@ export const GetDocumentSummaryResponse = zod.object({
   "rejectedCount": zod.number(),
   "userAddedCount": zod.number(),
   "pendingCount": zod.number(),
-  "riskScore": zod.number(),
+  "riskScore": zod.number().describe('Score from 0 to 100 representing remaining risk'),
   "completionPercent": zod.number(),
   "categoryBreakdown": zod.array(zod.object({
   "category": zod.string(),
@@ -199,6 +199,22 @@ export const CreateRedactionResponse = zod.object({
   "note": zod.string().nullish(),
   "createdAt": zod.string().optional(),
   "updatedAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Ask the AI Auditor a question about the document and its redactions
+ */
+export const ChatWithDocumentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ChatWithDocumentBody = zod.object({
+  "prompt": zod.string().describe('The user\'s question')
+})
+
+export const ChatWithDocumentResponse = zod.object({
+  "answer": zod.string()
 })
 
 

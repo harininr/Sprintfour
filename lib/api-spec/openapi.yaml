@@ -579,3 +579,5 @@ components:
           type: string
         recommendation:
           type: string
+        recommendation:
+          type: string

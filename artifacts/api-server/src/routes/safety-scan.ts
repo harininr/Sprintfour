@@ -4,6 +4,7 @@ import { z } from "zod";
 import { GoogleGenAI } from "@google/genai";
 import Groq from "groq-sdk";
 import OpenAI from "openai";
+import { decodeContent } from "./documents";
 
 const router: IRouter = Router();
 
@@ -109,14 +110,20 @@ router.post("/documents/:id/safety-scan", async (req, res): Promise<void> => {
 
   const totalRedactions = (redactions || []).length;
 
-  // Build redacted content
-  let redactedContent = doc.content;
+  // Decode the plain text from the JSON wrapper
+  const { plain: plainText } = decodeContent(doc.content);
+
+  // Build redacted content by replacing confirmed redactions in the plain text
+  let redactedContent = plainText;
   const sorted = (redactions || []).sort((a, b) => b.start_offset - a.start_offset);
   for (const r of sorted) {
-    redactedContent =
-      redactedContent.substring(0, r.start_offset) +
-      `[REDACTED ${r.category.toUpperCase()}]` +
-      redactedContent.substring(r.end_offset);
+    // Safety check: ensure offsets are within bounds
+    if (r.start_offset >= 0 && r.end_offset <= redactedContent.length && r.start_offset < r.end_offset) {
+      redactedContent =
+        redactedContent.substring(0, r.start_offset) +
+        `[REDACTED ${r.category.toUpperCase()}]` +
+        redactedContent.substring(r.end_offset);
+    }
   }
 
   // Run all 3 engines in parallel

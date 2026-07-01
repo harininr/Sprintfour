@@ -14,6 +14,7 @@ export interface ReviewSummary {
   rejectedCount: number;
   userAddedCount: number;
   pendingCount: number;
+  /** Score from 0 to 100 representing remaining risk */
   riskScore: number;
   completionPercent: number;
   categoryBreakdown: CategoryCount[];
